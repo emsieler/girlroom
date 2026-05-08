@@ -66,6 +66,10 @@
   padding: 0.18rem 0.85rem 0.26rem;
   text-align: center;
   gap: 0.1rem;
+  /* The logo doubles as the home link, so strip default anchor styles
+     when this element is rendered as an <a>. */
+  text-decoration: none;
+  color: inherit;
 }
 
 .logo-img {

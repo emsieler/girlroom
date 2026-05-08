@@ -3,17 +3,57 @@
   max-width: 640px;
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
+  color: var(--accent);
+}
+
+/* Force every text node in the article to render in the accent pink so
+   nothing inherits black from <body> or browser defaults (links). */
+.page,
+.page h1,
+.page h2,
+.page p,
+.page a,
+.page li {
+  color: var(--accent);
 }
 
 .page h1 {
   margin-top: 0;
 }
 
+/* Page heading stays black even though the body copy is pink — the
+   h1 reads as a small label, not part of the message itself. */
+.page .page__title {
+  color: #000;
+}
+
+/* About uses a small "hotfix presents:" line above the logo, sized like
+   a label rather than a hero heading. */
+.page .page__title--small {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.01em;
+}
+
+/* Logo image used in place of the show-name text on the about page.
+   Capped width so it doesn't blow up on wide viewports, with a small
+   gap below before the tagline. */
+.page__logo {
+  display: block;
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  margin: 0 0 0.75rem;
+}
+
 .page-nav {
-  /* Tight top padding pulls the link row up close to the logo above so
-     the header chrome stays compact. Bottom and sides stay at 1rem so
-     content below has breathing room. */
-  padding: 0.35rem 1rem 0.65rem;
+  /* Negative margin pulls the link row up into the logo's bottom
+     padding so the two read as one tight header block. Zero top
+     padding keeps the link text itself flush; bottom keeps a hair
+     of breathing room above the underline. */
+  margin-top: -0.6rem;
+  padding: 0 1rem 0.4rem;
   border-bottom: 2px solid #000;
 }
 
@@ -43,6 +83,5 @@
 
 .page .tagline {
   margin: 0 0 1.25rem;
-  opacity: 0.82;
   line-height: 1.4;
 }

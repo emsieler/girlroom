@@ -5,10 +5,12 @@
 }
 
 .page-nav {
-  /* Tight top padding pulls the link row up close to the logo above so
-     the header chrome stays compact. Bottom and sides stay at 1rem so
-     content below has breathing room. */
-  padding: 0.35rem 1rem 0.65rem;
+  /* Negative margin pulls the link row up into the logo's bottom
+     padding so the two read as one tight header block. Zero top
+     padding keeps the link text itself flush; bottom keeps a hair
+     of breathing room above the underline. */
+  margin-top: -0.6rem;
+  padding: 0 1rem 0.4rem;
   border-bottom: 2px solid #000;
 }
 
