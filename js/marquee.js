@@ -30,9 +30,43 @@ export function buildMarqueeChunk(text) {
   return chunk;
 }
 
+/* Measure the first chunk and write its width as `--marquee-shift` so the
+ * keyframe translates by an exact pixel amount instead of `-50%`. iOS
+ * Safari occasionally caches percentage-based transforms against the
+ * element's initial (zero) width and never re-evaluates them; pixel
+ * shifts sidestep that entirely. We also restart the animation so the
+ * new shift takes effect from the current frame. */
+function applyShift(/** @type {HTMLElement} */ marqueeEl) {
+  const chunk = marqueeEl.querySelector(".marquee__chunk");
+  if (!(chunk instanceof HTMLElement)) return;
+  const w = chunk.getBoundingClientRect().width;
+  if (!(w > 0)) return;
+  marqueeEl.style.setProperty("--marquee-shift", `-${w}px`);
+  marqueeEl.style.animation = "none";
+  void marqueeEl.offsetWidth;
+  marqueeEl.style.animation = "";
+}
+
+/* Bind a single resize listener per element so re-renders don't pile
+ * them up. Stored as a non-enumerable property to keep the DOM clean. */
+function ensureResizeBinding(/** @type {HTMLElement} */ marqueeEl) {
+  if (/** @type {any} */ (marqueeEl).__hasMarqueeResize) return;
+  /** @type {any} */ (marqueeEl).__hasMarqueeResize = true;
+  /** @type {number} */
+  let raf = 0;
+  window.addEventListener(
+    "resize",
+    () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(() => applyShift(marqueeEl));
+    },
+    { passive: true },
+  );
+}
+
 /**
- * Render the marquee with two duplicate chunks. The CSS animation translates
- * the parent by -50% which equals one chunk's width, producing a seamless loop.
+ * Render the marquee with two duplicate chunks and lock in a pixel-based
+ * scroll distance.
  *
  * @param {HTMLElement} marqueeEl  The #marqueeText element to populate.
  * @param {string} template  Marquee template; {artist} is substituted.
@@ -48,13 +82,18 @@ export function setMarquee(marqueeEl, template, artist = "") {
     if (i === 1) chunk.setAttribute("aria-hidden", "true");
     marqueeEl.appendChild(chunk);
   }
-  /* Restart the CSS animation so Safari recomputes translateX(-50%) against
-   * the current content width. Otherwise Safari "sticks" at whatever width
-   * the element had when the animation was first applied — usually 0 (since
-   * #marqueeText starts empty before this script runs), which makes the
-   * marquee look frozen. The void-offsetWidth pair forces reflow between
-   * the unset and reset so the engine treats it as a fresh animation. */
-  marqueeEl.style.animation = "none";
-  void marqueeEl.offsetWidth;
-  marqueeEl.style.animation = "";
+
+  /* Measure once now (synchronous), then again after layout has settled
+   * (two RAFs covers the common case where mobile Safari hasn't laid the
+   * inline-block out fully on first paint), then a final time after fonts
+   * load — fonts can change the chunk width. Each call restarts the
+   * animation so the most recent measurement wins. */
+  applyShift(marqueeEl);
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => applyShift(marqueeEl));
+  });
+  if (document.fonts && typeof document.fonts.ready?.then === "function") {
+    document.fonts.ready.then(() => applyShift(marqueeEl));
+  }
+  ensureResizeBinding(marqueeEl);
 }

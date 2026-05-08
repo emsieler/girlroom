@@ -14,10 +14,18 @@
   border-bottom: 1px solid #000;
 }
 
-/* Track holds 2 identical chunks. Translating by -50% (one chunk's width)
-   loops seamlessly. Inline-block + nowrap (not inline-flex + max-content)
-   because Safari's flex layout sometimes computes 0 width before paint and
-   freezes the marquee. */
+/* Track holds 2 identical chunks. Translating by exactly one chunk's width
+   loops seamlessly because the second chunk slides into the first chunk's
+   starting position.
+ *
+ * The shift distance (`--marquee-shift`) is set by JS in pixels after
+ * measuring the rendered chunk. We previously used `translateX(-50%)`,
+ * but iOS Safari sometimes commits the animation against the element's
+ * INITIAL (empty / 0px) width and never recomputes once content is added,
+ * which made the marquee look frozen on first load — the bfcache-restored
+ * page worked because it kept the running animation from the prior
+ * navigation. The CSS fallback `-50%` keeps the animation looking right
+ * before JS measures, in case JS is slow / disabled. */
 #marqueeText {
   display: inline-block;
   white-space: nowrap;
@@ -41,10 +49,10 @@
 
 @keyframes marquee-scroll {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translate3d(var(--marquee-shift, -50%), 0, 0);
   }
 }
 
