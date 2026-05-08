@@ -848,12 +848,41 @@ html.immersive-dive--go:not(.immersive-dive--zooming) .imac__mute-corner:not(.is
     height: auto;
   }
 
+  /* Single-column mobile layout: marquee → logo → iMac → nav. Side
+     galleries are hidden so the iMac dominates a narrow viewport. */
   .grid3 {
     grid-template-columns: 1fr;
     overflow: visible;
+    padding: 0.4rem 0.5rem;
   }
 
   .side {
-    max-height: 30vh;
+    display: none;
+  }
+
+  .center {
+    width: 100%;
+    height: auto;
+    padding: 0 0.5rem;
+  }
+
+  /* Desktop iMac uses height-driven sizing (height:100%, width:auto). On
+     mobile the parent has auto height, which collapses height:100% to 0
+     and the iMac vanishes. Switch to width-driven so aspect-ratio
+     determines the rendered height. */
+  .imac {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+
+  .logo-wrap {
+    height: auto;
+    margin-top: 0;
+    padding: 0.5rem 0.85rem 0.4rem;
+  }
+
+  .bottom-nav {
+    padding: 0.5rem 1rem 0.7rem;
   }
 }

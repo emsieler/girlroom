@@ -612,6 +612,32 @@ async function main() {
     throw new Error("fullscreen not supported");
   }
 
+  function isMobileViewport() {
+    return (
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(max-width: 720px)").matches
+    );
+  }
+
+  async function enterFullscreenSimple() {
+    /* Mobile / unsupported browsers: skip the cinematic dive entirely.
+     * Use native element fullscreen on the player, falling back to the
+     * <video> element's own fullscreen API for iOS Safari. */
+    const wrap = qs("playerWrap");
+    try {
+      await requestFs(wrap);
+      return;
+    } catch {
+      /* fall through */
+    }
+    const v = /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
+      video
+    );
+    if (typeof v.webkitEnterFullscreen === "function") {
+      v.webkitEnterFullscreen();
+    }
+  }
+
   async function enterFullscreenWithDive() {
     const wrap = qs("playerWrap");
 
@@ -624,16 +650,9 @@ async function main() {
 
     const frame = imacRoot?.querySelector(".imac__frame");
 
-    // No cinema shell / frame — fall back to element fullscreen.
-    if (!cinemaHost || !imacRoot || !frame) {
-      try {
-        await requestFs(wrap);
-      } catch {
-        const v = /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
-          video
-        );
-        if (typeof v.webkitEnterFullscreen === "function") v.webkitEnterFullscreen();
-      }
+    // Mobile or missing pieces: skip the dive and use plain native fullscreen.
+    if (isMobileViewport() || !cinemaHost || !imacRoot || !frame) {
+      await enterFullscreenSimple();
       return;
     }
 
