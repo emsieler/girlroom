@@ -1,6 +1,6 @@
 {
   "leftCycleMs": 4000,
-  "rightCycleMs": 4500,
+  "rightCycleMs": 4000,
   "left": [
     { "src": "assets/side-left/left-1.png" },
     { "src": "assets/side-left/left-2.png" },

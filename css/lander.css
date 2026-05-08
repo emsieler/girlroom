@@ -59,16 +59,16 @@ body {
 .grid3 {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 1fr 2.6fr 1fr;
-  gap: 0 0.75rem;
-  align-items: center;
+  grid-template-columns: 1.2fr 2.2fr 1.2fr;
+  gap: 0 0.5rem;
+  align-items: start;
   justify-items: center;
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   min-height: 0;
   overflow: hidden;
 }
 
-/* Side galleries: just the imagery, no box / no bg / no border */
+/* Sides nudge inward toward the iMac (left side: anchor right; right side: anchor left). */
 .side {
   width: 100%;
   height: 100%;
@@ -76,6 +76,15 @@ body {
   background: transparent;
   border: none;
   overflow: hidden;
+  padding-top: 0.5rem;
+}
+
+.side.left {
+  justify-self: end;
+}
+
+.side.right {
+  justify-self: start;
 }
 
 .side__stack {
@@ -83,7 +92,7 @@ body {
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -93,7 +102,7 @@ body {
   opacity: 0;
   transition: opacity 0.45s ease;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
