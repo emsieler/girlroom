@@ -1,0 +1,49 @@
+---
+description: Default to GPU acceleration and parallelism for heavy work
+alwaysApply: true
+---
+
+# Default to fast: GPU + parallelism
+
+Unless the user says otherwise, prefer hardware-accelerated and parallel paths
+when they're available locally. Detect support, fall back gracefully if not.
+
+## ffmpeg
+
+- **Encode**: prefer NVENC (`h264_nvenc` / `hevc_nvenc`) over `libx264` /
+  `libx265`. NVENC presets `p4`–`p6`, `-rc vbr -cq 22 -b:v 0` for quality.
+- **Decode**: pass `-hwaccel cuda` before `-i` to decode on the GPU.
+- **Full GPU pipeline**: when scaling, use `scale_cuda` and pass
+  `-hwaccel_output_format cuda` so frames stay on the GPU end-to-end. If
+  `scale_cuda` isn't in the local ffmpeg build, keep `-hwaccel cuda` for decode
+  and use CPU `scale` (still benefits from GPU encode).
+- **Detect before using**: `ffmpeg -hide_banner -encoders | grep h264_nvenc`,
+  `ffmpeg -hide_banner -filters | grep scale_cuda`. Fall back with a clear
+  message if missing.
+- **Keep an `HW=cpu` escape hatch** for portable fallback.
+
+## Uploads / network I/O
+
+- **rclone**: bump `--transfers` (8–32) and `--checkers` (16–64) for many small
+  files; set `--multi-thread-streams 4–8` with `--multi-thread-cutoff 64M` for
+  big files; add `--fast-list` for cloud listings.
+- **rclone S3 / R2**: use `--s3-upload-concurrency 4–8` and
+  `--s3-chunk-size 16M–64M` for multipart parallelism per file.
+- **aws s3 / s3cmd**: `aws configure set default.s3.max_concurrent_requests 16`
+  and `multipart_chunksize 16MB+`.
+- **curl/wget**: prefer `aria2c -x 16 -s 16` for large downloads when available.
+
+## Other heavy work
+
+- **Builds**: pass `-j$(nproc)` to `make`; let `cargo`/`go`/`ninja` use all
+  cores by default.
+- **Compression**: prefer `pigz` / `pbzip2` / `pixz` over single-threaded
+  `gzip` / `bzip2` / `xz` for large archives.
+- **rsync local**: bump `--info=progress2` + multiple parallel rsyncs by prefix
+  if a single stream is the bottleneck.
+
+## Don't
+
+- Don't pick the slow path "to be safe". Use the fast path and add a fallback.
+- Don't hardcode thread counts; expose env knobs (e.g. `RCLONE_TRANSFERS`) so
+  the user can override.

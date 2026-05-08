@@ -19,24 +19,37 @@ body {
   border-bottom: 1px solid #000;
 }
 
-.marquee span {
-  display: inline-block;
-  padding-left: 100%;
+/* Track holds 2 identical chunks. Translating by -50% (one chunk's width) loops
+   seamlessly. Starts at translateX(0) so the first chunk is visible flush to the
+   left edge — no leading off-screen padding. */
+#marqueeText {
+  display: inline-flex;
+  width: max-content;
   animation: marquee-scroll 40s linear infinite;
+  will-change: transform;
+}
+
+.marquee__chunk {
+  display: inline-block;
+  white-space: nowrap;
+  /* Trailing space between repetitions so the loop boundary breathes. */
+  padding-right: 4rem;
 }
 
 @keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
   to {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }
 
 .logo-wrap {
   flex: 0 0 auto;
-  /* Locked to the prior natural height (presents + img + tagline + gaps + padding)
-     so the iMac and side galleries do not shift now that the tagline lives on
-     the about page. Tweak only if the layout below moves. */
-  height: 4.7rem;
+  /* Locked height — keeps the iMac + side galleries from shifting when this
+     header content changes. Bumped to fit a bigger logo. */
+  height: 6.2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -48,7 +61,7 @@ body {
 
 .logo-img {
   display: block;
-  height: 50%;
+  height: 100%;
   max-height: 100%;
   width: auto;
   max-width: 100%;
@@ -192,6 +205,13 @@ body {
   height: var(--screen-height);
   background: #000;
   overflow: hidden;
+  outline: none;
+  border: 0;
+}
+
+.imac__screen:focus,
+.imac__screen:focus-visible {
+  outline: none;
 }
 
 .imac__screen video {
@@ -200,6 +220,13 @@ body {
   object-fit: contain;
   background: #000;
   display: block;
+  outline: none;
+  border: 0;
+}
+
+.imac__screen video:focus,
+.imac__screen video:focus-visible {
+  outline: none;
 }
 
 .imac__frame {
@@ -210,6 +237,8 @@ body {
   pointer-events: none;
   user-select: none;
   z-index: 2;
+  opacity: 1;
+  transition: opacity 0.2s ease;
 }
 
 .imac__controls {
@@ -218,15 +247,16 @@ body {
   right: 0;
   bottom: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.4rem;
+  gap: 0.25rem;
+  padding: 0.3rem 0.4rem;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
   opacity: 0;
   transition: opacity 0.2s ease;
   z-index: 3;
+  min-width: 0;
 }
 
 .imac__screen:hover .imac__controls,
@@ -235,38 +265,173 @@ body {
 }
 
 .imac__controls button {
-  font-size: 0.7rem;
+  font-size: 0.62rem;
+  line-height: 1;
   color: #fff;
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid #fff;
-  padding: 0.2rem 0.5rem;
+  padding: 0.18rem 0.35rem;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .imac__controls button:hover {
-  background: #ff00ff;
-  border-color: #ff00ff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.scrubber {
+  /* Native range, restyled — flex-1 so it stretches inside the control bar. */
+  --scrub-fill: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1 1 60px;
+  min-width: 40px;
+  max-width: 100%;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--scrub-fill, 0%),
+    rgba(255, 255, 255, 0.35) var(--scrub-fill, 0%),
+    rgba(255, 255, 255, 0.35) 100%
+  );
+}
+
+.scrubber::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.scrubber::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--accent);
+  margin-top: -4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.scrubber:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.scrubber:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.time-display {
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 0 0.1rem;
+  user-select: none;
+  flex: 0 0 auto;
 }
 
 .imac__badge {
   position: absolute;
-  top: 0.35rem;
-  left: 0.35rem;
-  font-size: 0.65rem;
-  padding: 0.15rem 0.35rem;
-  background: #ff00ff;
-  color: #fff;
+  top: 0.4rem;
+  left: 0.4rem;
+  font-family: inherit;
+  font-size: 0.62rem;
+  line-height: 1;
+  padding: 0.18rem 0.4rem;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: 1px solid #fff;
   font-weight: 700;
+  letter-spacing: 0.04em;
   z-index: 3;
   pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .vod-strip {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   gap: 0.35rem;
   justify-content: center;
   max-width: 720px;
   font-size: 0.75rem;
+}
+
+/* Dev-mode toggle (only injected on localhost) reveals the VOD strip. */
+html.dev-mode .vod-strip {
+  display: flex;
+}
+
+.dev-toggle {
+  position: fixed;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.6rem;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 2px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 9000;
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.dev-toggle:hover,
+.dev-toggle:focus-within {
+  opacity: 1;
+}
+
+.dev-toggle input {
+  margin: 0;
+  cursor: pointer;
+}
+
+html.immersive-dive .dev-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 .vod-strip button {
@@ -276,6 +441,10 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0.15rem 0.4rem;
+}
+
+.vod-strip button.is-active {
+  border-color: var(--accent);
 }
 
 .bottom-nav {
@@ -293,7 +462,75 @@ body {
 
 .bottom-nav a:hover {
   text-decoration: underline;
-  color: #ff00ff;
+  color: var(--accent);
+}
+
+/* Fullscreen “dive into the monitor” — 2D perspective + scale, no WebGL.
+ * The dive is performed AFTER entering OS fullscreen on <html>, so the
+ * browser chrome (tabs, URL bar) is gone before the animation starts. */
+html.immersive-dive,
+html.immersive-dive body {
+  overflow: hidden;
+  background: #000;
+}
+
+/* When <html> is the fullscreen element, give it a solid black background so
+ * anything outside the scaled iMac doesn't flash white. */
+html:fullscreen {
+  background: #000;
+}
+
+html.immersive-dive .marquee,
+html.immersive-dive .logo-wrap,
+html.immersive-dive .side,
+html.immersive-dive .vod-strip,
+html.immersive-dive .bottom-nav {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+html.immersive-dive .grid3 {
+  overflow: visible;
+}
+
+html.immersive-dive .center {
+  position: relative;
+  z-index: 40;
+  justify-content: center;
+}
+
+html.immersive-dive .imac {
+  transform-origin: var(--dive-origin-x, 50%) var(--dive-origin-y, 34%);
+  transition:
+    transform 0.75s cubic-bezier(0.2, 0.85, 0.25, 1),
+    filter 0.75s ease;
+  will-change: transform;
+}
+
+html.immersive-dive--go .imac {
+  transform: perspective(900px) translateZ(120px) scale(var(--dive-scale, 14));
+  filter: brightness(1.05);
+}
+
+html.immersive-dive--go .imac__frame {
+  opacity: 0;
+  transition: opacity 0.22s ease 0.48s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.immersive-dive .imac,
+  html.immersive-dive--go .imac__frame {
+    transition: none;
+  }
+
+  html.immersive-dive .marquee,
+  html.immersive-dive .logo-wrap,
+  html.immersive-dive .side,
+  html.immersive-dive .vod-strip,
+  html.immersive-dive .bottom-nav {
+    transition: none;
+  }
 }
 
 @media (max-width: 720px) {

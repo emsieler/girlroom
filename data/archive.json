@@ -1,7 +1,26 @@
 [
   {
+    "id": "2026-05-08-2026-05-06-stream",
+    "title": "2026-05-06 stream",
+    "artist": "DJ ATTENTION b2b DJ Fuck",
+    "date": "2026-05-08",
+    "poster": "",
+    "hls": "https://pub-070a9d21880847df832fdee775287b73.r2.dev/2026-05-08-2026-05-06-stream/index.m3u8",
+    "startAt": 173
+  },
+  {
+    "id": "sample-live-test",
+    "title": "Livestream test",
+    "artist": "TEST BROADCAST",
+    "date": "2026-01-01",
+    "poster": "",
+    "hls": "https://moctobpltc-i.akamaihd.net/hls/live/571329/eight/playlist.m3u8",
+    "live": true
+  },
+  {
     "id": "sample-bipbop",
     "title": "Sample stream (Apple test pattern)",
+    "artist": "APPLE BIPBOP",
     "date": "2026-01-01",
     "poster": "",
     "hls": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
@@ -9,6 +28,7 @@
   {
     "id": "sample-mux",
     "title": "Sample stream (Mux test)",
+    "artist": "MUX TEST",
     "date": "2025-12-15",
     "poster": "",
     "hls": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"

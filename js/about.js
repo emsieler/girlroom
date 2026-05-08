@@ -18,6 +18,7 @@ function setLineEl(id, text) {
 async function main() {
   const config = await loadJson("data/config.json");
   setLineEl("presentsText", config.presentsText);
+  setLineEl("showName", config.siteTitle);
   setLineEl("tagline", config.tagline);
 }
 

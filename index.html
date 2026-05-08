@@ -13,7 +13,6 @@
     </div>
 
     <header class="logo-wrap">
-      <p class="presents" id="presentsText" hidden></p>
       <img id="logoImg" class="logo-img" alt="girl room" hidden />
       <h1 class="logo-text" id="logoText">girl room</h1>
     </header>
@@ -22,19 +21,33 @@
       <aside class="side" id="sideLeft" aria-label="Left gallery"></aside>
 
       <section class="center">
-        <div class="imac">
+        <div class="imac" id="imacRoot">
           <div class="imac__screen" id="playerWrap">
             <span class="imac__badge" id="liveBadge" hidden>LIVE</span>
             <video id="mainVideo" playsinline autoplay muted></video>
             <div class="imac__controls">
-              <button type="button" id="btnPlay">play</button>
-              <button type="button" id="btnPause">pause</button>
+              <button type="button" id="btnPlayPause">play</button>
               <button type="button" id="btnBack10" data-vod-only hidden>
                 -10s
               </button>
               <button type="button" id="btnFwd10" data-vod-only hidden>
                 +10s
               </button>
+              <input
+                type="range"
+                id="scrubber"
+                class="scrubber"
+                min="0"
+                max="1000"
+                step="1"
+                value="0"
+                aria-label="seek"
+                data-vod-only
+                hidden
+              />
+              <span class="time-display" id="timeDisplay" data-vod-only hidden
+                >0:00 / 0:00</span
+              >
               <button type="button" id="btnMute">mute</button>
               <button type="button" id="btnFs">fullscreen</button>
             </div>

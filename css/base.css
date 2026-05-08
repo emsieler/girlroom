@@ -1,4 +1,11 @@
 /* girl room — base tokens + reset */
+:root {
+  /* Single source of truth for the accent. Change this to change selection
+     highlight, hover color, LIVE badge, etc. across the whole site. */
+  --accent: #f516a5;
+  --accent-fg: #fff;
+}
+
 *,
 *::before,
 *::after {
@@ -17,6 +24,27 @@ body {
   color: #000;
   font-family: Arial, Helvetica, sans-serif;
   line-height: 1.4;
+  /* Form controls (checkboxes, radios, range, progress) use this. */
+  accent-color: var(--accent);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+::-moz-selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.fatal-banner {
+  position: fixed;
+  inset: auto 0 0 0;
+  padding: 1rem;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-family: monospace;
+  z-index: 9999;
 }
 
 img,
@@ -39,9 +67,9 @@ button {
 }
 
 button:hover {
-  background: #ff00ff;
-  color: #fff;
-  border-color: #ff00ff;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
 }
 
 /* @font-face — drop .woff2 into /fonts/ and uncomment:

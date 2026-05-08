@@ -15,7 +15,7 @@
 }
 
 .page-nav a:hover {
-  color: #ff00ff;
+  color: var(--accent);
 }
 
 .archive-page h1 {
@@ -59,6 +59,6 @@
 }
 
 .archive-card:hover .meta {
-  background: #ff00ff;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-fg);
 }

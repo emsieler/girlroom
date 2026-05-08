@@ -20,7 +20,8 @@
 #   RCLONE_MT_STREAMS=4         (per-file streams for big files)
 #   RCLONE_MT_CUTOFF=64M        (use multi-stream above this size)
 #   S3_UPLOAD_CONCURRENCY=4     (rclone S3 multipart concurrency per file)
-#   S3_CHUNK_SIZE=32M           (rclone S3 multipart chunk size)
+#   TRIM_START=2:53               (optional — skip leading seconds from INPUT before encode;
+#                                  use instead of hacking the first .ts — binary trim breaks HLS)
 #
 # NOTE: this whole script is wrapped in `main()` so editing the file mid-run is safe —
 # bash parses main() to its closing brace before executing it.
@@ -64,6 +65,11 @@ main() {
   local MODE HW
   MODE="${MODE:-single}"
   HW="${HW:-nvenc}"
+
+  local -a SEEK_FLAGS=()
+  if [[ -n "${TRIM_START:-}" ]]; then
+    SEEK_FLAGS=(-ss "$TRIM_START")
+  fi
 
   local VCODEC SCALE_FILTER
   local -a SINGLE_QFLAGS LADDER_PRESET INPUT_HWFLAGS
@@ -111,11 +117,15 @@ main() {
     echo "  OUT=$OUT"
     echo "  Would upload to s3://${R2_BUCKET}/${SLUG}/"
     echo "  Public playlist would be: $PLAYLIST_URL (ladder) or .../index.m3u8 (single)"
+    echo "  TRIM_START=${TRIM_START:-<none>}"
     exit 0
   fi
 
   echo "==> MODE=$MODE  HW=$HW  VCODEC=$VCODEC  SLUG=$SLUG"
   echo "==> OUT=$OUT"
+  if [[ -n "${TRIM_START:-}" ]]; then
+    echo "==> TRIM_START=$TRIM_START (leading portion dropped from INPUT)"
+  fi
 
   if [[ "${SKIP_ENCODE:-}" != "1" && "$VCODEC" == "h264_nvenc" ]]; then
     if ! ffmpeg -hide_banner -encoders 2>/dev/null | grep -q 'h264_nvenc'; then
