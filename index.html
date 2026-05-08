@@ -22,25 +22,23 @@
 
       <section class="center">
         <div class="imac">
-          <div class="imac__bezel">
-            <div class="imac__screen" id="playerWrap">
-              <span class="imac__badge" id="liveBadge" hidden>LIVE</span>
-              <video id="mainVideo" playsinline></video>
-              <div class="imac__controls">
-                <button type="button" id="btnPlay">play</button>
-                <button type="button" id="btnPause">pause</button>
-                <button type="button" id="btnBack10" data-vod-only hidden>
-                  -10s
-                </button>
-                <button type="button" id="btnFwd10" data-vod-only hidden>
-                  +10s
-                </button>
-                <button type="button" id="btnMute">mute</button>
-                <button type="button" id="btnFs">fullscreen</button>
-              </div>
+          <div class="imac__screen" id="playerWrap">
+            <span class="imac__badge" id="liveBadge" hidden>LIVE</span>
+            <video id="mainVideo" playsinline></video>
+            <div class="imac__controls">
+              <button type="button" id="btnPlay">play</button>
+              <button type="button" id="btnPause">pause</button>
+              <button type="button" id="btnBack10" data-vod-only hidden>
+                -10s
+              </button>
+              <button type="button" id="btnFwd10" data-vod-only hidden>
+                +10s
+              </button>
+              <button type="button" id="btnMute">mute</button>
+              <button type="button" id="btnFs">fullscreen</button>
             </div>
           </div>
-          <div class="imac__stand" aria-hidden="true"></div>
+          <img class="imac__frame" src="assets/imac-frame.png" alt="" />
         </div>
         <div class="vod-strip" id="vodStrip"></div>
       </section>

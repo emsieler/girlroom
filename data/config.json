@@ -2,5 +2,6 @@
   "siteTitle": "girl room",
   "marqueeText": "hotfix presents… girl room… now playing… DJ ATTENTION b2b DJ Fuck… track id: honeybee (grrl)… scrolling text…",
   "sideMode": "cycle",
-  "showLogoText": true
+  "logoImage": "assets/logo.png",
+  "showLogoText": false
 }

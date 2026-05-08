@@ -1,9 +1,19 @@
-/* Faithful lander: marquee → title → 3 columns → bottom nav */
+/* Faithful lander: marquee → logo → 3 columns → bottom nav, all in one viewport */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
 
 .marquee {
+  flex: 0 0 auto;
   overflow: hidden;
-  border-bottom: 2px solid #000;
-  padding: 0.35rem 0;
+  padding: 0.3rem 0;
   font-size: 0.85rem;
   white-space: nowrap;
 }
@@ -21,8 +31,9 @@
 }
 
 .logo-wrap {
+  flex: 0 0 auto;
   text-align: center;
-  padding: 1rem 0 0.5rem;
+  padding: 0.4rem 0 0.2rem;
 }
 
 .logo-img {
@@ -33,41 +44,40 @@
 .logo-text {
   margin: 0;
   font-family: "GirlRoom", Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.04em;
 }
 
 .grid3 {
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(72px, 1fr) minmax(280px, 2.2fr) minmax(72px, 1fr);
-  gap: 0.75rem 1rem;
-  align-items: start;
-  padding: 0 0.75rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  grid-template-columns: 1fr 2.4fr 1fr;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-items: center;
+  padding: 0 1rem;
+  min-height: 0;
+  overflow: hidden;
 }
 
+/* Side galleries: just the imagery, no box / no bg / no border */
 .side {
-  min-height: 220px;
-  max-height: 70vh;
-  overflow: hidden;
-  border: 2px solid #000;
+  width: 100%;
+  height: 100%;
   position: relative;
-  background: repeating-linear-gradient(
-    135deg,
-    #f8f8f8,
-    #f8f8f8 8px,
-    #eee 8px,
-    #eee 16px
-  );
+  background: transparent;
+  border: none;
+  overflow: hidden;
 }
 
 .side__stack {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .side__layer {
@@ -78,7 +88,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.35rem;
 }
 
 .side__layer.is-active {
@@ -93,50 +102,53 @@
   width: auto;
   height: auto;
   object-fit: contain;
+  display: block;
   margin: 0 auto;
 }
 
 .side__empty {
-  padding: 1rem;
   font-size: 0.75rem;
+  color: #888;
   text-align: center;
-  color: #444;
+  padding: 0.5rem;
 }
 
 .center {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-/* CSS-only iMac-ish bezel until assets/imac-frame.png exists */
+/*
+ * iMac frame is a transparent PNG (1600x1342). Video sits ABSOLUTELY behind
+ * it inside the screen cutout. Tune the four --screen-* vars if your PNG's
+ * cutout isn't exactly here.
+ */
 .imac {
+  --screen-top: 3.2%;
+  --screen-left: 2.8%;
+  --screen-width: 94.4%;
+  --screen-height: 38.5%;
+
   position: relative;
   width: 100%;
-  max-width: 640px;
-}
-
-.imac__bezel {
-  border: 12px solid #c8c8c8;
-  border-radius: 12px 12px 0 0;
-  background: linear-gradient(180deg, #e4e4e4, #b8b8b8);
-  box-shadow: 0 8px 0 #9a9a9a, 0 12px 24px rgba(0, 0, 0, 0.15);
-  padding: 14px 14px 0;
-}
-
-.imac__stand {
-  height: 18px;
-  margin: 0 auto;
-  width: 42%;
-  background: linear-gradient(180deg, #b0b0b0, #888);
-  border-radius: 0 0 6px 6px;
+  max-width: min(720px, 100%);
+  aspect-ratio: 1600 / 1342;
+  height: auto;
+  max-height: 100%;
 }
 
 .imac__screen {
-  position: relative;
+  position: absolute;
+  top: var(--screen-top);
+  left: var(--screen-left);
+  width: var(--screen-width);
+  height: var(--screen-height);
   background: #000;
-  aspect-ratio: 16 / 10;
   overflow: hidden;
 }
 
@@ -144,6 +156,17 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+.imac__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
 }
 
 .imac__controls {
@@ -160,6 +183,7 @@
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
   opacity: 0;
   transition: opacity 0.2s ease;
+  z-index: 3;
 }
 
 .imac__screen:hover .imac__controls,
@@ -171,7 +195,8 @@
   font-size: 0.7rem;
   color: #fff;
   background: rgba(0, 0, 0, 0.5);
-  border-color: #fff;
+  border: 1px solid #fff;
+  padding: 0.2rem 0.5rem;
 }
 
 .imac__controls button:hover {
@@ -188,7 +213,7 @@
   background: #ff00ff;
   color: #fff;
   font-weight: 700;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -197,7 +222,8 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   justify-content: center;
-  max-width: 640px;
+  max-width: 720px;
+  font-size: 0.75rem;
 }
 
 .vod-strip button {
@@ -206,16 +232,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0.15rem 0.4rem;
 }
 
 .bottom-nav {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem 1.5rem 2rem;
+  padding: 0.6rem 1.5rem;
   font-size: 0.95rem;
-  border-top: 2px solid #000;
+  border: none;
 }
 
 .bottom-nav a {
@@ -228,20 +254,17 @@
 }
 
 @media (max-width: 720px) {
+  body {
+    overflow: auto;
+    height: auto;
+  }
+
   .grid3 {
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .side {
-    max-height: 40vh;
-    order: 2;
-  }
-
-  .center {
-    order: 1;
-  }
-
-  .side.right {
-    order: 3;
+    max-height: 30vh;
   }
 }
