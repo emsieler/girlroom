@@ -66,6 +66,25 @@ async function main() {
     logoText.hidden = false;
   }
 
+  const setLineEl = (id, text) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (typeof text === "string" && text.trim().length > 0) {
+      // Allow "\n" in JSON to render as line breaks.
+      el.innerHTML = "";
+      const parts = text.split("\n");
+      parts.forEach((line, i) => {
+        if (i > 0) el.appendChild(document.createElement("br"));
+        el.appendChild(document.createTextNode(line));
+      });
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
+  };
+  setLineEl("presentsText", config.presentsText);
+  setLineEl("tagline", config.tagline);
+
   const video = /** @type {HTMLVideoElement} */ (qs("mainVideo"));
   const liveBadge = qs("liveBadge");
 

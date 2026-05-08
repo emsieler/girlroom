@@ -1,7 +1,13 @@
 {
   "siteTitle": "girl room",
+
   "marqueeText": "hotfix presents… girl room… now playing… DJ ATTENTION b2b DJ Fuck… track id: honeybee (grrl)… scrolling text…",
-  "sideMode": "cycle",
+
+  "presentsText": "hotfix presents:",
   "logoImage": "assets/logo.png",
-  "showLogoText": false
+  "showLogoText": false,
+
+  "tagline": "an ny-based audiovisual radio series featuring b2bs in my bedroom w visuals by ME, dj attention",
+
+  "sideMode": "cycle"
 }
