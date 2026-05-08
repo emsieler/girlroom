@@ -32,12 +32,18 @@ body {
 
 .logo-wrap {
   flex: 0 0 auto;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 0.4rem 0 0.2rem;
+  text-align: center;
 }
 
 .logo-img {
+  display: block;
   max-height: 3rem;
+  width: auto;
   margin: 0 auto;
 }
 
