@@ -25,3 +25,14 @@
 .page img {
   border: 2px solid #000;
 }
+
+.page .presents {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.page .tagline {
+  margin: 0 0 1.25rem;
+  opacity: 0.82;
+  line-height: 1.4;
+}

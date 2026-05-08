@@ -33,6 +33,10 @@ body {
 
 .logo-wrap {
   flex: 0 0 auto;
+  /* Locked to the prior natural height (presents + img + tagline + gaps + padding)
+     so the iMac and side galleries do not shift now that the tagline lives on
+     the about page. Tweak only if the layout below moves. */
+  height: 4.7rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -44,8 +48,11 @@ body {
 
 .logo-img {
   display: block;
-  height: 0.5rem;
+  height: 50%;
+  max-height: 100%;
   width: auto;
+  max-width: 100%;
+  object-fit: contain;
   margin: 0 auto;
 }
 
