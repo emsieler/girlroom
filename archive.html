@@ -5,9 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>archive — girl room</title>
     <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/header.css" />
     <link rel="stylesheet" href="css/archive.css" />
   </head>
   <body>
+    <div class="marquee" aria-label="Marquee">
+      <span id="marqueeText"></span>
+    </div>
+
+    <header class="logo-wrap">
+      <img id="logoImg" class="logo-img" alt="girl room" hidden />
+      <h1 class="logo-text" id="logoText">girl room</h1>
+    </header>
+
     <nav class="page-nav">
       <a href="index.html">home</a>
       <a href="about.html">about</a>
@@ -17,6 +27,7 @@
       <h1>archive</h1>
       <div class="archive-grid" id="archiveGrid"></div>
     </div>
+    <script type="module" src="js/site-header.js"></script>
     <script type="module" src="js/archive-page.js"></script>
   </body>
 </html>

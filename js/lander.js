@@ -2,6 +2,7 @@ import { loadJson } from "./fetch-json.js";
 import { resolvePlayback } from "./sources.js";
 import { attachHls, detachPlayer } from "./player-hls.js";
 import { initSideGallery } from "./side-gallery.js";
+import { setMarquee as setMarqueeShared } from "./marquee.js";
 
 /** @type {{ destroy?: () => void } | null} */
 let playerHandle = null;
@@ -128,45 +129,8 @@ async function main() {
 
   const marqueeEl = qs("marqueeText");
   const marqueeTemplate = config.marqueeText || "";
-
-  // Build a chunk node from the template. Anything wrapped in *...* becomes
-  // a <strong><em>...</em></strong> for visual emphasis inside the ASCII art.
-  // Built node-by-node (no innerHTML) so unicode in the template can't be
-  // misinterpreted as markup.
-  const buildMarqueeChunk = (text) => {
-    const chunk = document.createElement("span");
-    chunk.className = "marquee__chunk";
-    const re = /\*([^*]+)\*/g;
-    let i = 0;
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      if (m.index > i) {
-        chunk.appendChild(document.createTextNode(text.slice(i, m.index)));
-      }
-      const strong = document.createElement("strong");
-      const em = document.createElement("em");
-      em.textContent = m[1];
-      strong.appendChild(em);
-      chunk.appendChild(strong);
-      i = m.index + m[0].length;
-    }
-    if (i < text.length) {
-      chunk.appendChild(document.createTextNode(text.slice(i)));
-    }
-    return chunk;
-  };
-
-  const setMarquee = (artist) => {
-    const text = marqueeTemplate
-      .replace(/\{artist\}/g, (artist || "").toString())
-      .trim();
-    marqueeEl.innerHTML = "";
-    for (let i = 0; i < 2; i++) {
-      const chunk = buildMarqueeChunk(text);
-      if (i === 1) chunk.setAttribute("aria-hidden", "true");
-      marqueeEl.appendChild(chunk);
-    }
-  };
+  const setMarquee = (artist) =>
+    setMarqueeShared(marqueeEl, marqueeTemplate, artist);
   setMarquee("");
 
   const logoImg = document.getElementById("logoImg");

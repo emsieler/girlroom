@@ -1,4 +1,7 @@
-/* Faithful lander: marquee → logo → 3 columns → bottom nav, all in one viewport */
+/* Faithful lander: marquee → logo → 3 columns → bottom nav, all in one viewport.
+ *
+ * Marquee + logo styling lives in `css/header.css` (loaded site-wide).
+ * This file only adds lander-specific layout tweaks on top. */
 
 html,
 body {
@@ -10,83 +13,11 @@ body {
   flex-direction: column;
 }
 
-.marquee {
-  flex: 0 0 auto;
-  overflow: hidden;
-  padding: 0.4rem 0;
-  font-size: 0.95rem;
-  white-space: nowrap;
-  border-bottom: 1px solid #000;
-}
-
-/* Track holds 2 identical chunks. Translating by -50% (one chunk's width) loops
-   seamlessly. Starts at translateX(0) so the first chunk is visible flush to the
-   left edge — no leading off-screen padding.
-
-   `inline-block + white-space: nowrap` rather than `inline-flex + max-content`
-   because Safari's flex layout sometimes computes 0 width before first paint,
-   making `translateX(-50%)` evaluate to 0px and freezing the marquee. */
-#marqueeText {
-  display: inline-block;
-  white-space: nowrap;
-  animation: marquee-scroll 40s linear infinite;
-  will-change: transform;
-}
-
-.marquee__chunk {
-  display: inline-block;
-  white-space: nowrap;
-  /* Trailing space between repetitions so the loop boundary breathes. */
-  padding-right: 4rem;
-}
-
-.marquee__chunk strong,
-.marquee__chunk strong em {
-  font-weight: 800;
-  font-style: italic;
-  letter-spacing: 0.01em;
-}
-
-@keyframes marquee-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
+/* Pulls the logo a hair closer to the marquee inside the flex-column body
+   so the iMac gets a few extra pixels of vertical room. Inner pages keep
+   the default header.css spacing. */
 .logo-wrap {
-  flex: 0 0 auto;
-  /* Locked height — keeps the iMac + side galleries from shifting when this
-     header content changes. */
-  height: 3.8rem;
   margin-top: -0.55rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0.18rem 0.85rem 0.26rem;
-  text-align: center;
-  gap: 0.1rem;
-}
-
-.logo-img {
-  display: block;
-  height: 100%;
-  max-height: 100%;
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-  margin: 0 auto;
-}
-
-.logo-text {
-  margin: 0;
-  font-family: "GirlRoom", Georgia, "Times New Roman", serif;
-  font-size: clamp(0.7rem, 1.05vw, 0.9rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
 }
 
 .presents,

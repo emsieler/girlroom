@@ -5,9 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>about — girl room</title>
     <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/header.css" />
     <link rel="stylesheet" href="css/page.css" />
   </head>
   <body>
+    <div class="marquee" aria-label="Marquee">
+      <span id="marqueeText"></span>
+    </div>
+
+    <header class="logo-wrap">
+      <img id="logoImg" class="logo-img" alt="girl room" hidden />
+      <h1 class="logo-text" id="logoText">girl room</h1>
+    </header>
+
     <nav class="page-nav">
       <a href="index.html">home</a>
       <a href="archive.html">archive</a>
@@ -19,6 +29,7 @@
       <p class="show-name" id="showName"></p>
       <p class="tagline" id="tagline"></p>
     </article>
+    <script type="module" src="js/site-header.js"></script>
     <script type="module" src="js/about.js"></script>
   </body>
 </html>
