@@ -671,9 +671,10 @@ body:has(.cinema-host:-webkit-full-screen) .dev-toggle {
   z-index: 9000;
   pointer-events: none;
   /* Linear so the page darkens at a steady rate (no easing slowdown at the
-     ends). Shorter than the iMac transform so the background reaches full
-     black ~1s before the zoom finishes — keeps the iMac "bright" longer. */
-  transition: opacity 2.2s linear;
+     ends). Much shorter than the iMac transform so the room commits to
+     black well before the zoom finishes — the iMac then continues growing
+     against an already-black backdrop. */
+  transition: opacity 1.5s linear;
   will-change: opacity;
 }
 
