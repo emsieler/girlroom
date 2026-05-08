@@ -13,7 +13,11 @@
 # Multi-rung ladder (slow, large upload):
 #   MODE=ladder INPUT="/path/to/file.mkv" TITLE="..." ./scripts/archive-to-r2.sh
 #
+# Hardware encode (NVIDIA NVENC) — ~5-10x faster than libx264:
+#   HW=nvenc MODE=ladder INPUT="..." TITLE="..." ./scripts/archive-to-r2.sh
+#
 # Optional: SLUG=my-folder-name   DRY_RUN=1   (print plan; no encode/upload/json)
+#   HW=cpu (default) | nvenc                                  (Intel QSV / AMD AMF: edit below if you want)
 
 set -euo pipefail
 
@@ -39,8 +43,28 @@ fi
 
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com}"
 MODE="${MODE:-ladder}"
+HW="${HW:-cpu}"
 INPUT="${INPUT:?set INPUT=/path/to/video.mkv}"
 TITLE="${TITLE:?set TITLE=\"Show title for archive\"}"
+
+case "$HW" in
+  cpu)
+    VCODEC=libx264
+    SINGLE_QFLAGS=(-preset medium -crf 22)
+    LADDER_PRESET=(-preset medium)
+    ;;
+  nvenc)
+    VCODEC=h264_nvenc
+    # NVENC: -rc vbr + -cq is constant-quality; -b:v 0 is required for CQ
+    SINGLE_QFLAGS=(-preset p5 -rc vbr -cq 22 -b:v 0)
+    LADDER_PRESET=(-preset p5 -rc vbr)
+    ;;
+  *)
+    echo "HW must be 'cpu' or 'nvenc', got: $HW" >&2
+    exit 1
+    ;;
+esac
+echo "==> HW=$HW  VCODEC=$VCODEC"
 
 slugify() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9._-]\+/-/g' -e 's/^-\|-$//g' | cut -c1-80
@@ -66,22 +90,22 @@ mkdir -p "$OUT"
 if [[ "$MODE" == "single" ]]; then
   echo "==> Encoding single-rendition HLS…"
   ffmpeg -hide_banner -y -i "$INPUT" \
-    -c:v libx264 -preset medium -crf 22 \
+    -c:v "$VCODEC" "${SINGLE_QFLAGS[@]}" \
     -c:a aac -b:a 160k -ac 2 \
     -f hls -hls_time 6 -hls_playlist_type vod \
     -hls_segment_filename "${OUT}/seg_%03d.ts" \
     "${OUT}/index.m3u8"
   PLAYLIST_URL="${R2_PUBLIC_BASE%/}/${SLUG}/index.m3u8"
 elif [[ "$MODE" == "ladder" ]]; then
-  echo "==> Encoding multi-rung HLS (1080p / 720p / 480p) — this can take a long time…"
+  echo "==> Encoding multi-rung HLS (1080p / 720p / 480p)…"
   mkdir -p "${OUT}/v0" "${OUT}/v1" "${OUT}/v2"
   # Requires at least one audio stream; if video-only, add -f lavfi -i anullsrc=... first.
   ffmpeg -hide_banner -y -i "$INPUT" \
     -filter_complex "[0:v]split=3[s1][s2][s3];[s1]scale=-2:1080,format=yuv420p,setsar=1[v1];[s2]scale=-2:720,format=yuv420p,setsar=1[v2];[s3]scale=-2:480,format=yuv420p,setsar=1[v3]" \
     -map "[v1]" -map "[v2]" -map "[v3]" -map "0:a:0" \
-    -c:v:0 libx264 -preset medium -b:v:0 5000k -maxrate:v:0 5500k -bufsize:v:0 11000k -g 60 -keyint_min 60 -sc_threshold 0 \
-    -c:v:1 libx264 -preset medium -b:v:1 2800k -maxrate:v:1 3100k -bufsize:v:1 6200k -g 60 -keyint_min 60 -sc_threshold 0 \
-    -c:v:2 libx264 -preset medium -b:v:2 1200k -maxrate:v:2 1400k -bufsize:v:2 2800k -g 60 -keyint_min 60 -sc_threshold 0 \
+    -c:v:0 "$VCODEC" "${LADDER_PRESET[@]}" -b:v:0 5000k -maxrate:v:0 5500k -bufsize:v:0 11000k -g 60 -keyint_min 60 -sc_threshold 0 \
+    -c:v:1 "$VCODEC" "${LADDER_PRESET[@]}" -b:v:1 2800k -maxrate:v:1 3100k -bufsize:v:1 6200k -g 60 -keyint_min 60 -sc_threshold 0 \
+    -c:v:2 "$VCODEC" "${LADDER_PRESET[@]}" -b:v:2 1200k -maxrate:v:2 1400k -bufsize:v:2 2800k -g 60 -keyint_min 60 -sc_threshold 0 \
     -c:a:0 aac -b:a:0 128k -ac 2 \
     -f hls -hls_time 6 -hls_playlist_type vod \
     -hls_segment_type mpegts \
