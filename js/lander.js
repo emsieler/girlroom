@@ -83,20 +83,41 @@ async function main() {
     liveBadge.hidden = resolved.mode !== "live";
   }
 
+  video.muted = true;
+  video.autoplay = true;
+  video.setAttribute("playsinline", "");
   await switchSource(video, resolved.src, resolved.mode);
+  try {
+    await video.play();
+  } catch {
+    // Some browsers refuse autoplay until first interaction; user can click play.
+  }
 
   const onPick = async (item) => {
     liveBadge.hidden = true;
     await switchSource(video, item.hls, "vod");
+    try {
+      await video.play();
+    } catch {
+      /* user can manually click play */
+    }
     renderVodStrip(resolved.list, item.hls, onPick);
   };
   renderVodStrip(resolved.list, resolved.src, onPick);
 
   qs("btnPlay").addEventListener("click", () => video.play());
   qs("btnPause").addEventListener("click", () => video.pause());
-  qs("btnMute").addEventListener("click", () => {
+
+  const muteBtn = qs("btnMute");
+  const refreshMute = () => {
+    muteBtn.textContent = video.muted ? "unmute" : "mute";
+  };
+  muteBtn.addEventListener("click", () => {
     video.muted = !video.muted;
+    refreshMute();
   });
+  video.addEventListener("volumechange", refreshMute);
+  refreshMute();
   qs("btnFs").addEventListener("click", () => {
     const wrap = qs("playerWrap");
     if (document.fullscreenElement) {
