@@ -48,4 +48,13 @@ export function setMarquee(marqueeEl, template, artist = "") {
     if (i === 1) chunk.setAttribute("aria-hidden", "true");
     marqueeEl.appendChild(chunk);
   }
+  /* Restart the CSS animation so Safari recomputes translateX(-50%) against
+   * the current content width. Otherwise Safari "sticks" at whatever width
+   * the element had when the animation was first applied — usually 0 (since
+   * #marqueeText starts empty before this script runs), which makes the
+   * marquee look frozen. The void-offsetWidth pair forces reflow between
+   * the unset and reset so the engine treats it as a fresh animation. */
+  marqueeEl.style.animation = "none";
+  void marqueeEl.offsetWidth;
+  marqueeEl.style.animation = "";
 }

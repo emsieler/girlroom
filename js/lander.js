@@ -202,9 +202,16 @@ async function main() {
   setMarquee(initialArtist);
   await switchSource(video, resolved.src, resolved.mode, initialStartAt);
 
-  /* Robust autoplay: Safari sometimes rejects the first play() call until
-   * the source is loadedmetadata-ready, and may revoke autoplay in low-power
-   * mode. Retry on canplay/loadedmetadata and on first user gesture. */
+  /* Robust autoplay across Safari (desktop + iOS): the first play() call
+   * often rejects because metadata hasn't arrived yet, and Safari refuses
+   * autoplay outright in low-power mode and on first-domain visits. We
+   * retry on every "data is ready" event, and as a last resort on the next
+   * user gesture *outside* the player.
+   *
+   * We intentionally do NOT register a document-wide pointerdown retry
+   * that could fire on the same click that hits the video — pointerdown
+   * runs before click, so a retry there starts playback and the
+   * subsequent click handler on <video> would toggle it back to paused. */
   const tryPlay = () => {
     video.muted = true;
     return video.play().catch(() => {
@@ -212,41 +219,47 @@ async function main() {
     });
   };
   await tryPlay();
-  let autoplayRetryHandlers = [];
-  const armAutoplayRetry = () => {
-    if (autoplayRetryHandlers.length) return;
-    const onceRetry = async () => {
-      await tryPlay();
-      if (!video.paused) cleanupAutoplayRetry();
-    };
-    autoplayRetryHandlers = [
-      ["loadedmetadata", onceRetry],
-      ["canplay", onceRetry],
-    ];
-    for (const [name, fn] of autoplayRetryHandlers) {
-      video.addEventListener(name, fn);
+
+  /** @type {Array<[string, EventListener]>} */
+  const videoReadyHandlers = [];
+  const onReady = () => {
+    if (!video.paused) {
+      cleanupReadyHandlers();
+      return;
     }
-    const gestureRetry = async () => {
-      await tryPlay();
-      cleanupAutoplayRetry();
-    };
-    document.addEventListener("pointerdown", gestureRetry, { once: true });
-    document.addEventListener("touchstart", gestureRetry, {
-      once: true,
-      passive: true,
-    });
-    document.addEventListener("keydown", gestureRetry, { once: true });
-    autoplayRetryHandlers.push(["pointerdown", gestureRetry, true]);
+    void tryPlay();
   };
-  const cleanupAutoplayRetry = () => {
-    for (const entry of autoplayRetryHandlers) {
-      const [name, fn, isDoc] = entry;
-      if (isDoc) document.removeEventListener(name, fn);
-      else video.removeEventListener(name, fn);
+  const cleanupReadyHandlers = () => {
+    for (const [name, fn] of videoReadyHandlers) {
+      video.removeEventListener(name, fn);
     }
-    autoplayRetryHandlers = [];
+    videoReadyHandlers.length = 0;
   };
-  if (video.paused) armAutoplayRetry();
+  for (const name of ["loadedmetadata", "loadeddata", "canplay", "canplaythrough"]) {
+    video.addEventListener(name, onReady);
+    videoReadyHandlers.push([name, onReady]);
+  }
+
+  /* Fallback: any user gesture *outside* the player wakes autoplay.
+   * Clicks on the player itself are handled by the video click listener
+   * below (togglePlay), so we exclude playerWrap to avoid the
+   * pointerdown-then-click double-toggle that paused playback. */
+  const outsideGestureRetry = (/** @type {Event} */ ev) => {
+    const t = ev.target;
+    if (t instanceof Node && playerWrap.contains(t)) return;
+    if (!video.paused) {
+      document.removeEventListener("pointerdown", outsideGestureRetry);
+      document.removeEventListener("touchstart", outsideGestureRetry);
+      document.removeEventListener("keydown", outsideGestureRetry);
+      return;
+    }
+    void tryPlay();
+  };
+  document.addEventListener("pointerdown", outsideGestureRetry);
+  document.addEventListener("touchstart", outsideGestureRetry, {
+    passive: true,
+  });
+  document.addEventListener("keydown", outsideGestureRetry);
 
   const onPick = async (item) => {
     const isLive = item?.live === true;
@@ -280,10 +293,39 @@ async function main() {
   };
   playPauseBtn.addEventListener("click", togglePlay);
 
-  // Click anywhere on the video itself toggles play/pause. The control bar
-  // sits at z-index 3 above the video, so clicks on its buttons / scrubber
-  // hit those elements first and never reach this listener.
-  video.addEventListener("click", togglePlay);
+  // Drop focus from control buttons after a mouse click so :focus-within
+  // doesn't keep the toolbar visible after the cursor leaves the player.
+  // Keyboard activation (e.detail === 0) keeps focus for accessibility.
+  const controlsEl = document.querySelector(".imac__controls");
+  if (controlsEl) {
+    controlsEl.addEventListener("click", (ev) => {
+      const t = ev.target;
+      if (
+        ev.detail > 0 &&
+        t instanceof HTMLElement &&
+        t.tagName === "BUTTON"
+      ) {
+        t.blur();
+      }
+    });
+  }
+
+  const muteBtn = qs("btnMute");
+
+  /* Click anywhere on the screen area toggles play/pause. We listen on the
+   * screen wrapper instead of the <video> directly because Safari can drop
+   * click events on a <video> that hasn't loaded metadata yet (which is
+   * exactly when the user is most likely to click to start playback).
+   * Clicks on overlay controls (play/pause, scrubber, mute, live badge)
+   * are excluded so their own handlers run uninterrupted. */
+  playerWrap.addEventListener("click", (ev) => {
+    const t = ev.target;
+    if (!(t instanceof Element)) return;
+    if (controlsEl?.contains(t)) return;
+    if (t === muteBtn || muteBtn.contains(t)) return;
+    if (t.classList.contains("imac__badge")) return;
+    togglePlay();
+  });
   video.addEventListener("play", refreshPlayPause);
   video.addEventListener("pause", refreshPlayPause);
   video.addEventListener("ended", refreshPlayPause);
@@ -303,25 +345,6 @@ async function main() {
     }
     refreshPlayPause();
   });
-
-  // Drop focus from control buttons after a mouse click so :focus-within
-  // doesn't keep the toolbar visible after the cursor leaves the player.
-  // Keyboard activation (e.detail === 0) keeps focus for accessibility.
-  const controlsEl = document.querySelector(".imac__controls");
-  if (controlsEl) {
-    controlsEl.addEventListener("click", (ev) => {
-      const t = ev.target;
-      if (
-        ev.detail > 0 &&
-        t instanceof HTMLElement &&
-        t.tagName === "BUTTON"
-      ) {
-        t.blur();
-      }
-    });
-  }
-
-  const muteBtn = qs("btnMute");
 
   /* iMac chrome (bottom bar + white "mute" corner): shown on pointer activity,
    * auto-hides after idle like cinema mode — :hover alone kept overlays stuck
@@ -407,6 +430,12 @@ async function main() {
     const wasMuted = video.muted;
     video.muted = !video.muted;
     refreshMute();
+    /* The click is itself a user gesture, so use it to wake playback if
+     * Safari blocked autoplay. Costs nothing if the video is already
+     * playing (play() is idempotent). */
+    if (video.paused) {
+      void video.play().catch(() => {});
+    }
     if (wasMuted && !video.muted) {
       muteBtn.blur();
       // Small offset so the click doesn't snap-hide before the user sees
