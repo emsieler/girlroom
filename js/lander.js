@@ -499,7 +499,8 @@ async function main() {
     document.documentElement.classList.remove(
       "immersive-dive",
       "immersive-dive--go",
-      "immersive-dive--zooming"
+      "immersive-dive--zooming",
+      "immersive-dive--exiting"
     );
     if (imacRoot) {
       imacRoot.style.removeProperty("--dive-scale");
@@ -510,8 +511,10 @@ async function main() {
     }
   }
 
-  // Total length of the dive zoom (matches the .imac transition in CSS).
+  // Zoom-in duration (matches CSS on `html.immersive-dive .imac`).
   const DIVE_MS = 3500;
+  // Zoom-out is a bit faster so exiting fullscreen doesn’t drag.
+  const DIVE_EXIT_MS = 2700;
   /** @type {number | null} */
   let diveFinishTimer = null;
   /** @type {number | null} */
@@ -702,7 +705,10 @@ async function main() {
     /* Backdrop and iMac transform animate back to their resting state.
      * Nothing was reparented during the dive (see finishDive), so there's
      * no DOM cleanup to undo here. */
-    document.documentElement.classList.add("immersive-dive--zooming");
+    document.documentElement.classList.add(
+      "immersive-dive--zooming",
+      "immersive-dive--exiting"
+    );
     document.documentElement.classList.remove("immersive-dive--go");
     diveBusy = true;
 
@@ -710,7 +716,7 @@ async function main() {
       diveExitTimer = null;
       clearImmersive();
       diveBusy = false;
-    }, DIVE_MS);
+    }, DIVE_EXIT_MS);
   }
 
   qs("btnFs").addEventListener("click", () => {
