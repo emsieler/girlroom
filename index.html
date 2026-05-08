@@ -24,6 +24,14 @@
         <div class="imac" id="imacRoot">
           <div class="imac__screen" id="playerWrap">
             <span class="imac__badge" id="liveBadge" hidden>LIVE</span>
+            <button
+              type="button"
+              id="btnMute"
+              class="imac__mute-corner is-muted"
+              aria-label="unmute"
+            >
+              unmute
+            </button>
             <video id="mainVideo" playsinline autoplay muted></video>
             <div class="imac__controls">
               <button type="button" id="btnPlayPause">play</button>
@@ -48,7 +56,6 @@
               <span class="time-display" id="timeDisplay" data-vod-only hidden
                 >0:00 / 0:00</span
               >
-              <button type="button" id="btnMute">mute</button>
               <button type="button" id="btnFs">fullscreen</button>
             </div>
           </div>

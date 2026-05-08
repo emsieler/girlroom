@@ -407,6 +407,83 @@ body {
   white-space: nowrap;
 }
 
+@keyframes imac-live-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.imac__badge:not([hidden]) {
+  animation: imac-live-blink 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imac__badge:not([hidden]) {
+    animation: none;
+  }
+}
+
+/* Top-right: loud pink "unmute" while muted; after unmute, same treatment as
+   the bottom bar (white text, only on hover). */
+.imac__mute-corner {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 4;
+  font-family: inherit;
+  font-size: 0.65rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.imac__mute-corner.is-muted {
+  font-weight: 800;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Unmuted: matches the bottom control bar buttons — white text, dark
+   translucent fill, white border. Hidden until hover on the screen (same
+   as the play bar). Pink "unmute" above is the only always-visible state. */
+.imac__mute-corner:not(.is-muted) {
+  font-weight: 400;
+  font-size: 0.62rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #fff;
+  padding: 0.18rem 0.35rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.imac__screen:hover .imac__mute-corner:not(.is-muted),
+.imac__mute-corner:not(.is-muted):focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.imac__mute-corner:not(.is-muted):hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+
 .vod-strip {
   display: none;
   flex-wrap: wrap;
@@ -653,7 +730,8 @@ html.immersive-dive--go .imac__frame {
 /* While zooming in or out: hide the control bar completely (no layout, no
    hit-testing) so clicks reach the video for play/pause. After landing,
    JS removes .immersive-dive--zooming so the normal hover rules apply. */
-html.immersive-dive--zooming .imac__controls {
+html.immersive-dive--zooming .imac__controls,
+html.immersive-dive--zooming .imac__mute-corner {
   visibility: hidden;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -661,19 +739,27 @@ html.immersive-dive--zooming .imac__controls {
 }
 
 html.immersive-dive--zooming .imac__screen:hover .imac__controls,
-html.immersive-dive--zooming .imac__controls:focus-within {
+html.immersive-dive--zooming .imac__controls:focus-within,
+html.immersive-dive--zooming .imac__screen:hover .imac__mute-corner,
+html.immersive-dive--zooming .imac__mute-corner:focus-visible {
   visibility: hidden !important;
   opacity: 0 !important;
 }
 
-/* Zoomed-in hold (landed): bar stays off until hover; don't let the invisible
-   strip eat clicks meant for the video. */
-html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls {
+/* Zoomed-in hold (landed): bar + unmuted mute corner stay off until hover;
+   don't let invisible strips eat clicks meant for the video. */
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls,
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__mute-corner:not(.is-muted) {
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen:hover .imac__controls,
-html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls:focus-within {
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls:focus-within,
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen:hover .imac__mute-corner:not(.is-muted),
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__mute-corner:not(.is-muted):focus-visible {
+  opacity: 1;
   pointer-events: auto;
 }
 

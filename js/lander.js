@@ -316,11 +316,15 @@ async function main() {
 
   const muteBtn = qs("btnMute");
   const refreshMute = () => {
-    muteBtn.textContent = video.muted ? "unmute" : "mute";
+    const muted = video.muted;
+    muteBtn.textContent = muted ? "unmute" : "mute";
+    muteBtn.classList.toggle("is-muted", muted);
+    muteBtn.setAttribute("aria-label", muted ? "unmute" : "mute");
   };
-  muteBtn.addEventListener("click", () => {
+  muteBtn.addEventListener("click", (ev) => {
     video.muted = !video.muted;
     refreshMute();
+    if (ev.detail > 0) muteBtn.blur();
   });
   video.addEventListener("volumechange", refreshMute);
   refreshMute();
