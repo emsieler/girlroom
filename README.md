@@ -38,7 +38,8 @@ girlroom/
     archive.json          # past streams (newest first)
     sides.json            # left/right media lists + per-item ms
   scripts/
-    archive-vod.sh        # ffmpeg + rclone helper
+    archive-to-r2.sh      # encode HLS → rclone to R2 → prepend archive.json (.dotenv)
+    archive-vod.sh        # legacy: manual PUBLIC_BASE + rclone remote
   assets/
     imac-frame.png        # optional later — CSS bezel used until you add this
     side-left/  side-right/
@@ -180,27 +181,40 @@ When you go **offline**, clear `liveHls` back to `""` or remove the key so visit
 
 ---
 
-## Post-stream: cheap archive on R2
+## Post-stream: archive on R2 (recommended script)
 
-1. **Download** the finished recording from Mux (MP4) to your machine.
-2. Configure **rclone** for Cloudflare R2 (`rclone config` — S3-compatible endpoint, access key, secret).
-3. Run:
+Use [`scripts/archive-to-r2.sh`](scripts/archive-to-r2.sh). It reads **only** repo-root [`.dotenv`](.dotenv.example) (never commit real `.dotenv`).
+
+1. Copy [`.dotenv.example`](.dotenv.example) → `.dotenv` and fill in:
+   - **`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`** — from **R2 → Manage R2 API Tokens → Create API token** with **Object Read & Write** on bucket `girl-room`.  
+     These are **S3-compatible keys**. They are **not** the same as a Cloudflare **API token** (`CLOUDFLARE_TOKEN` from the dashboard / wrangler). **rclone cannot upload objects with `CLOUDFLARE_TOKEN`** for the S3 API; keep that token for Workers/DNS if you want, but the script expects `R2_*` keys.
+   - **Account vs user scoped token:** either works. Prefer a token **scoped to this bucket** if the UI offers it; account-wide R2 read/write is fine for a solo project.
+   - **`R2_ACCOUNT_ID`** — the hex subdomain in `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`.
+   - **`R2_BUCKET`** — `girl-room`.
+   - **`R2_PUBLIC_BASE`** — the **browser-visible** base URL for objects (see below). **Do not** use `https://…r2.cloudflarestorage.com` here; that host is for **authenticated S3 API**, not anonymous playback.
+
+2. **Public URL for playback:** enable one of:
+   - **Public Development URL** (bucket → Settings → **R2.dev subdomain**): fast, free, URL looks like `https://pub-xxxxx.r2.dev`. Good for dev.
+   - **Custom domain** (same screen → **Custom Domains**): e.g. `https://media.girlroom.com`. **Recommended for production** (clean URLs, same bucket).
+
+3. Install **rclone** and **ffmpeg**, then:
 
    ```bash
-   SLUG=2026-05-07-show-name \
-   INPUT=./recording.mp4 \
-   R2_REMOTE=r2:girlroom-vods \
-   PUBLIC_BASE=https://cdn.girlroom.com \
-   ./scripts/archive-vod.sh
+   INPUT="/path/to/recording.mkv" \
+   TITLE="2026-05-06 set" \
+   ./scripts/archive-to-r2.sh
    ```
 
-   The script runs **ffmpeg** (single-rendition HLS for reliability) then **rclone copy**, then prints a JSON snippet to paste at the **top** of `data/archive.json`.
+   Default **`MODE=single`**: one H264 ladder segment list (`index.m3u8` + `.ts` chunks).  
+   **`MODE=ladder`**: 1080p / 720p / 480p variants + `master.m3u8` (slow, large).
 
-4. In the Mux dashboard, **delete** the asset you no longer need stored there.
+4. The script **uploads** to `s3://girl-room/<SLUG>/` via rclone (subfolder created automatically) and **prepends** `data/archive.json` **after** a successful upload.
 
-### Multi-bitrate ladder (optional, better ABR)
+Legacy one-off: [`scripts/archive-vod.sh`](scripts/archive-vod.sh) (manual `PUBLIC_BASE` / `rclone` remote name) is still there if you prefer.
 
-The shipped script uses **one** quality for simplicity. For a 3-rung ladder, run a separate ffmpeg recipe (example pattern — tune bitrates/gops to taste):
+### Multi-bitrate ladder (manual ffmpeg reference)
+
+If you ever hand-run ffmpeg instead of `MODE=ladder`:
 
 ```bash
 ffmpeg -y -i input.mp4 \
