@@ -91,6 +91,18 @@ Drop files in place, then edit JSON/HTML. No build step.
 
 ### Side galleries (images, GIFs, silent video)
 
+The columns are roughly **272 × 600 px** at max desktop, narrower on smaller screens. Each item is **centered horizontally and vertically** in the column and scaled down to fit — items can have different widths and heights and they will all line up on the column's center axis.
+
+Suggested source sizes (use ~2× the displayed size for crisp high-DPI rendering):
+
+| Piece type | Suggested px | Format |
+|---|---|---|
+| Tall figure | ~600 × 1200 | PNG (transparent) |
+| Square-ish | ~600 × 600 | PNG / JPG |
+| Wide / landscape | ~1000 × 600 | PNG / JPG |
+| Animated line art | ~400 × 800, ≤ 5 MB | GIF or animated WebP |
+| Animated video loop | ~600 × 1200, ≤ 3 MB | MP4 (use `-an` to strip audio) |
+
 1. Put files under `assets/side-left/` and `assets/side-right/`.
 2. Edit `data/sides.json`:
 
