@@ -43,7 +43,7 @@ body {
 
 .logo-img {
   display: block;
-  max-height: 0.8rem;
+  height: 0.5rem;
   width: auto;
   margin: 0 auto;
 }
