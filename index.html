@@ -60,6 +60,10 @@
             </div>
           </div>
           <img class="imac__frame" src="assets/imac-frame.png" alt="" />
+          <!-- Fades over the silver chin during the dive so it matches the
+               black backdrop. Lives inside the iMac stacking context
+               (z-index 9100) so it actually covers the chin. -->
+          <div class="imac__chin-cover" aria-hidden="true"></div>
         </div>
         <div class="vod-strip" id="vodStrip"></div>
       </section>

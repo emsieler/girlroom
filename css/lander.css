@@ -705,10 +705,44 @@ html.immersive-dive .cinema-host {
   overflow: hidden;
 }
 
+/* Chin cover: a black div absolutely inside the iMac stacking context
+   (z-index > frame's 2). It fades in during the dive so the silver chin
+   becomes invisible, matching the black backdrop — even though the iMac
+   sits above the backdrop at z-index 9100 and can't otherwise be covered. */
+.imac__chin-cover {
+  position: absolute;
+  top: 63.79%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  opacity: 0;
+  z-index: 3;
+  pointer-events: none;
+  /* Exit: no delay — fade back to transparent immediately as the chin
+     re-enters the viewport during zoom-out. */
+  transition: opacity 0.6s linear;
+}
+
+html.immersive-dive--go .imac__chin-cover {
+  opacity: 1;
+  /* Entry: delay until the chin actually reaches the viewport edge.
+     JS computes --chin-exit-delay by inverting the bezier on geometry. */
+  transition: opacity 0.6s linear var(--chin-exit-delay, 0.5s);
+}
+
+/* Exit (--exiting set simultaneously with --go removed): snap the cover
+   to transparent so the silver chin doesn't briefly show as a black
+   outline during zoom-out. */
+html.immersive-dive--exiting .imac__chin-cover {
+  transition: none;
+  opacity: 0;
+}
+
 html.immersive-dive .imac {
   position: relative;
   z-index: 9100;
-  transform-origin: var(--dive-origin-x, 50%) var(--dive-origin-y, 41%);
+  transform-origin: var(--dive-origin-x, 50%) var(--dive-origin-y, 33.95%);
   transition: transform 3.5s cubic-bezier(0.16, 0.62, 0.2, 1);
   will-change: transform;
 }
@@ -783,6 +817,7 @@ html.immersive-dive--go:not(.immersive-dive--zooming) .imac__mute-corner:not(.is
 
 @media (prefers-reduced-motion: reduce) {
   .dive-backdrop,
+  .imac__chin-cover,
   html.immersive-dive .imac,
   html.immersive-dive .imac__frame,
   html.immersive-dive--exiting .imac,

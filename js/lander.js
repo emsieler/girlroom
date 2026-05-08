@@ -508,6 +508,7 @@ async function main() {
       imacRoot.style.removeProperty("--dive-origin-y");
       imacRoot.style.removeProperty("--dive-tx");
       imacRoot.style.removeProperty("--dive-ty");
+      imacRoot.style.removeProperty("--chin-exit-delay");
     }
   }
 
@@ -665,6 +666,50 @@ async function main() {
     imacRoot.style.setProperty("--dive-tx", `${tx}px`);
     imacRoot.style.setProperty("--dive-ty", `${ty}px`);
     imacRoot.style.setProperty("--dive-scale", String(scale));
+
+    /* Compute when the chin bottom crosses the viewport's bottom edge so
+     * .imac__chin-cover only starts fading at that moment (not before).
+     *
+     * During the transition, BOTH scale and translate interpolate together
+     * via the bezier curve. Let p ∈ [0,1] be the bezier output (the
+     * interpolation factor for `transform`). At progress p:
+     *   scale_p   = 1 + p*(s-1)
+     *   ty_p      = p*(vh/2 - screenCy)
+     *   chin_y(p) = screenCy + chinDist*scale_p + ty_p
+     * Solving chin_y(p) = vh yields:
+     *   p_exit = (vh - imacRect.bottom) / [chinDist*(s-1) + (vh/2 - screenCy)]
+     */
+    const chinDist = imacRect.bottom - screenCy;
+    const numerExit = vh - imacRect.bottom;
+    const denomExit = chinDist * (scale - 1) + (vh / 2 - screenCy);
+    const pChinExit = denomExit > 0
+      ? Math.max(0, Math.min(1, numerExit / denomExit))
+      : 0;
+
+    /* Invert cubic-bezier(0.16, 0.62, 0.2, 1) at p_exit to get the linear
+     * time fraction (since p is the bezier OUTPUT at exit, we need the
+     * INPUT time fraction whose output equals p). */
+    const cbPoint = (t, p1, p2) =>
+      3 * p1 * t * (1 - t) ** 2 + 3 * p2 * t ** 2 * (1 - t) + t ** 3;
+    const invertCb = (output, x1, y1, x2, y2) => {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 28; i++) {
+        const mid = (lo + hi) / 2;
+        if (cbPoint(mid, y1, y2) < output) lo = mid;
+        else hi = mid;
+      }
+      return cbPoint((lo + hi) / 2, x1, x2);
+    };
+    const timeFrac = invertCb(pChinExit, 0.16, 0.62, 0.2, 1);
+    /* Geometric chin-exit time + extra "let it linger" offset so the silver
+     * chin stays visible past the moment it crosses the viewport edge.
+     * Capped to leave room for the 0.6s fade to finish before the dive ends. */
+    const CHIN_LINGER_SEC = .4;
+    const fadeSec = 0.6;
+    const maxDelaySec = (DIVE_MS / 1000) - fadeSec;
+    const rawDelaySec = (timeFrac * DIVE_MS) / 1000 + CHIN_LINGER_SEC;
+    const chinDelay = Math.min(maxDelaySec, rawDelaySec).toFixed(2);
+    imacRoot.style.setProperty("--chin-exit-delay", `${chinDelay}s`);
 
     document.documentElement.classList.add(
       "immersive-dive",
