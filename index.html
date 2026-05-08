@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>girl room</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/lander.css" />
+  </head>
+  <body>
+    <div class="marquee" aria-label="Marquee">
+      <span id="marqueeText"></span>
+    </div>
+
+    <header class="logo-wrap">
+      <img id="logoImg" alt="girl room" hidden />
+      <h1 class="logo-text" id="logoText">girl room</h1>
+    </header>
+
+    <main class="grid3">
+      <aside class="side" id="sideLeft" aria-label="Left gallery"></aside>
+
+      <section class="center">
+        <div class="imac">
+          <div class="imac__bezel">
+            <div class="imac__screen" id="playerWrap">
+              <span class="imac__badge" id="liveBadge" hidden>LIVE</span>
+              <video id="mainVideo" playsinline></video>
+              <div class="imac__controls">
+                <button type="button" id="btnPlay">play</button>
+                <button type="button" id="btnPause">pause</button>
+                <button type="button" id="btnBack10" data-vod-only hidden>
+                  -10s
+                </button>
+                <button type="button" id="btnFwd10" data-vod-only hidden>
+                  +10s
+                </button>
+                <button type="button" id="btnMute">mute</button>
+                <button type="button" id="btnFs">fullscreen</button>
+              </div>
+            </div>
+          </div>
+          <div class="imac__stand" aria-hidden="true"></div>
+        </div>
+        <div class="vod-strip" id="vodStrip"></div>
+      </section>
+
+      <aside class="side" id="sideRight" aria-label="Right gallery"></aside>
+    </main>
+
+    <nav class="bottom-nav">
+      <a href="about.html">about</a>
+      <a href="archive.html">archive</a>
+      <a href="contact.html">contact</a>
+    </nav>
+
+    <script type="module" src="js/lander.js"></script>
+  </body>
+</html>

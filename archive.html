@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>archive — girl room</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/archive.css" />
+  </head>
+  <body>
+    <nav class="page-nav">
+      <a href="index.html">home</a>
+      <a href="about.html">about</a>
+      <a href="contact.html">contact</a>
+    </nav>
+    <div class="archive-page">
+      <h1>archive</h1>
+      <p id="archiveIntro">
+        Past streams load from <code>data/archive.json</code>. Click a card to
+        open playback on the home page (or paste the HLS URL into your player).
+      </p>
+      <div class="archive-grid" id="archiveGrid"></div>
+    </div>
+    <script type="module" src="js/archive-page.js"></script>
+  </body>
+</html>

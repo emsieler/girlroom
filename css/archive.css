@@ -1,0 +1,64 @@
+.archive-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.page-nav {
+  padding: 1rem;
+  border-bottom: 2px solid #000;
+}
+
+.page-nav a {
+  margin-right: 1rem;
+  color: inherit;
+}
+
+.page-nav a:hover {
+  color: #ff00ff;
+}
+
+.archive-page h1 {
+  margin-top: 0;
+}
+
+.archive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.archive-card {
+  border: 2px solid #000;
+  padding: 0;
+  text-align: left;
+  background: #fff;
+}
+
+.archive-card button {
+  width: 100%;
+  border: none;
+  padding: 0;
+  text-align: left;
+}
+
+.archive-card img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #eee;
+}
+
+.archive-card .meta {
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.archive-card .title {
+  font-weight: 700;
+}
+
+.archive-card:hover .meta {
+  background: #ff00ff;
+  color: #fff;
+}

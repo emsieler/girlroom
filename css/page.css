@@ -1,0 +1,27 @@
+/* Simple inner pages (about / contact) */
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.page h1 {
+  margin-top: 0;
+}
+
+.page-nav {
+  padding: 1rem;
+  border-bottom: 2px solid #000;
+}
+
+.page-nav a {
+  margin-right: 1rem;
+}
+
+.page figure {
+  margin: 1.5rem 0;
+}
+
+.page img {
+  border: 2px solid #000;
+}

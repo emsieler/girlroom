@@ -1,0 +1,243 @@
+/* Faithful lander: marquee → title → 3 columns → bottom nav */
+
+.marquee {
+  overflow: hidden;
+  border-bottom: 2px solid #000;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.marquee span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: marquee-scroll 40s linear infinite;
+}
+
+@keyframes marquee-scroll {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.logo-wrap {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+}
+
+.logo-img {
+  max-height: 3rem;
+  margin: 0 auto;
+}
+
+.logo-text {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) minmax(280px, 2.2fr) minmax(72px, 1fr);
+  gap: 0.75rem 1rem;
+  align-items: start;
+  padding: 0 0.75rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.side {
+  min-height: 220px;
+  max-height: 70vh;
+  overflow: hidden;
+  border: 2px solid #000;
+  position: relative;
+  background: repeating-linear-gradient(
+    135deg,
+    #f8f8f8,
+    #f8f8f8 8px,
+    #eee 8px,
+    #eee 16px
+  );
+}
+
+.side__stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+}
+
+.side__layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+}
+
+.side__layer.is-active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.side__layer img,
+.side__layer video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.side__empty {
+  padding: 1rem;
+  font-size: 0.75rem;
+  text-align: center;
+  color: #444;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* CSS-only iMac-ish bezel until assets/imac-frame.png exists */
+.imac {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+}
+
+.imac__bezel {
+  border: 12px solid #c8c8c8;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, #e4e4e4, #b8b8b8);
+  box-shadow: 0 8px 0 #9a9a9a, 0 12px 24px rgba(0, 0, 0, 0.15);
+  padding: 14px 14px 0;
+}
+
+.imac__stand {
+  height: 18px;
+  margin: 0 auto;
+  width: 42%;
+  background: linear-gradient(180deg, #b0b0b0, #888);
+  border-radius: 0 0 6px 6px;
+}
+
+.imac__screen {
+  position: relative;
+  background: #000;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.imac__screen video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imac__controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.imac__screen:hover .imac__controls,
+.imac__controls:focus-within {
+  opacity: 1;
+}
+
+.imac__controls button {
+  font-size: 0.7rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border-color: #fff;
+}
+
+.imac__controls button:hover {
+  background: #ff00ff;
+  border-color: #ff00ff;
+}
+
+.imac__badge {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.35rem;
+  background: #ff00ff;
+  color: #fff;
+  font-weight: 700;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.vod-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  max-width: 640px;
+}
+
+.vod-strip button {
+  font-size: 0.7rem;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2rem;
+  font-size: 0.95rem;
+  border-top: 2px solid #000;
+}
+
+.bottom-nav a {
+  text-decoration: none;
+}
+
+.bottom-nav a:hover {
+  text-decoration: underline;
+  color: #ff00ff;
+}
+
+@media (max-width: 720px) {
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+
+  .side {
+    max-height: 40vh;
+    order: 2;
+  }
+
+  .center {
+    order: 1;
+  }
+
+  .side.right {
+    order: 3;
+  }
+}

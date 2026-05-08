@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+*.log
+node_modules/
+.vercel/
+.netlify/
+
+# Local tooling
+.rclone.conf
+
+# Large exports (keep out of git until you want them)
+*.mp4
+*.mov
+*.mkv
+out/
+dist/
