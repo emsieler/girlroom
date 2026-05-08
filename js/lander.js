@@ -409,7 +409,8 @@ async function main() {
   function clearImmersive() {
     document.documentElement.classList.remove(
       "immersive-dive",
-      "immersive-dive--go"
+      "immersive-dive--go",
+      "immersive-dive--zooming"
     );
     if (imacRoot) {
       imacRoot.style.removeProperty("--dive-scale");
@@ -420,12 +421,47 @@ async function main() {
     }
   }
 
+  // Total length of the dive zoom (matches the .imac transition in CSS).
+  const DIVE_MS = 3500;
+  /** @type {number | null} */
+  let diveFinishTimer = null;
+  /** @type {number | null} */
+  let diveExitTimer = null;
+
+  function clearDiveTimers() {
+    if (diveFinishTimer != null) {
+      window.clearTimeout(diveFinishTimer);
+      diveFinishTimer = null;
+    }
+    if (diveExitTimer != null) {
+      window.clearTimeout(diveExitTimer);
+      diveExitTimer = null;
+    }
+  }
+
+  function isImmersive() {
+    return document.documentElement.classList.contains("immersive-dive");
+  }
+
   document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement) {
+    if (document.fullscreenElement) return;
+    if (isImmersive()) {
+      // Native FS just exited (Esc); reverse the dive.
+      startDiveExit();
+    } else {
       restorePlayerToImac();
       clearImmersive();
       diveBusy = false;
     }
+  });
+
+  // Esc also triggers an exit when we ran the dive without native FS (e.g.
+  // Safari refused the requestFullscreen call).
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    if (!isImmersive()) return;
+    if (document.fullscreenElement) return;
+    startDiveExit();
   });
 
   /** @param {Element} el */
@@ -445,7 +481,7 @@ async function main() {
     const wrap = qs("playerWrap");
 
     if (document.fullscreenElement) return;
-    if (diveBusy) return;
+    if (diveBusy || isImmersive()) return;
 
     const reduced =
       typeof window.matchMedia === "function" &&
@@ -467,50 +503,145 @@ async function main() {
     }
 
     diveBusy = true;
+    clearDiveTimers();
 
-    cinemaHost.removeAttribute("hidden");
-    cinemaHost.classList.add("is-open");
-    if (!reduced) cinemaHost.classList.add("is-entering");
-    cinemaHost.appendChild(wrap);
-
+    /* Try to enter native FS on the document so browser chrome hides while
+     * the dive plays out. The user gesture is consumed here. If the browser
+     * refuses, we keep going with a CSS-only fullscreen — Esc still works
+     * via the keydown handler above.
+     *
+     * Critically, we measure AFTER FS, because requesting FS changes the
+     * viewport size and the iMac re-flows. Measuring before would compute
+     * a translate that's wrong by the FS offset, biasing the zoom landing
+     * point off-center. */
+    let fsAcquired = false;
     try {
-      await requestFs(cinemaHost);
+      await requestFs(document.documentElement);
+      fsAcquired = true;
     } catch {
-      imacRoot.insertBefore(wrap, frame);
-      cinemaHost.classList.remove("is-open", "is-entering");
-      cinemaHost.setAttribute("hidden", "");
-      diveBusy = false;
-      const v = /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
-        video
-      );
-      if (typeof v.webkitEnterFullscreen === "function") {
-        v.webkitEnterFullscreen();
-      }
-      return;
+      /* fall through, CSS-only dive */
     }
 
-    if (!reduced) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          cinemaHost.classList.remove("is-entering");
-        });
+    /* Chrome can resolve the requestFullscreen promise before window inner
+     * sizes have settled. Wait for whichever comes first: a resize event,
+     * a fullscreenchange that confirms FS, or a short timeout. Then take
+     * two more frames so layout + paint are fully committed. */
+    if (fsAcquired) {
+      await new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          window.removeEventListener("resize", finish);
+          document.removeEventListener("fullscreenchange", onFsChange);
+          window.clearTimeout(t);
+          resolve();
+        };
+        const onFsChange = () => {
+          if (document.fullscreenElement) finish();
+        };
+        window.addEventListener("resize", finish, { once: true });
+        document.addEventListener("fullscreenchange", onFsChange);
+        const t = window.setTimeout(finish, 250);
       });
     }
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
 
-    // Reveal controls on entry, then start the auto-hide countdown.
-    showCinemaControls(true);
+    /* Measure the iMac and screen cutout in (now FS) viewport coords.
+     * Compute a transform that scales the iMac around the screen cutout's
+     * center until the screen fills the viewport, and translates so the
+     * cutout center lands at the viewport center. */
+    const imacRect = imacRoot.getBoundingClientRect();
+    const screenRect = wrap.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    /* "Contain" the screen cutout in the viewport — the first edge that
+     * touches the viewport edge stops the zoom, so the video preserves its
+     * aspect ratio with black bars on the other axis (matches the
+     * cinema-host's object-fit: contain). */
+    const scale = Math.min(vw / screenRect.width, vh / screenRect.height);
+    const screenCx = screenRect.left + screenRect.width / 2;
+    const screenCy = screenRect.top + screenRect.height / 2;
+    const originX = screenCx - imacRect.left;
+    const originY = screenCy - imacRect.top;
+    const tx = vw / 2 - screenCx;
+    const ty = vh / 2 - screenCy;
 
+    imacRoot.style.setProperty("--dive-origin-x", `${originX}px`);
+    imacRoot.style.setProperty("--dive-origin-y", `${originY}px`);
+    imacRoot.style.setProperty("--dive-tx", `${tx}px`);
+    imacRoot.style.setProperty("--dive-ty", `${ty}px`);
+    imacRoot.style.setProperty("--dive-scale", String(scale));
+
+    document.documentElement.classList.add(
+      "immersive-dive",
+      "immersive-dive--zooming"
+    );
+
+    if (reduced) {
+      document.documentElement.classList.add("immersive-dive--go");
+      finishDive();
+    } else {
+      // Two RAFs so the initial style commits before the transition runs.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.documentElement.classList.add("immersive-dive--go");
+        });
+      });
+      diveFinishTimer = window.setTimeout(finishDive, DIVE_MS);
+    }
+  }
+
+  function finishDive() {
+    /* The dive lands in its own steady state: backdrop fully black, iMac
+     * zoomed to fill the viewport, frame faded out, video still parented
+     * inside the iMac and playing. We deliberately do NOT hand the player
+     * off to the cinema-host overlay — that swap caused a visible jump,
+     * because the iMac screen cutout aspect (~1.837) doesn't match a 16:9
+     * viewport, while the cinema-host video uses object-fit: contain. The
+     * dove iMac already covers the screen, so we just hold here until exit. */
+    diveFinishTimer = null;
+    document.documentElement.classList.remove("immersive-dive--zooming");
     diveBusy = false;
   }
 
+  function startDiveExit() {
+    if (!isImmersive()) return;
+    clearDiveTimers();
+
+    /* Backdrop and iMac transform animate back to their resting state.
+     * Nothing was reparented during the dive (see finishDive), so there's
+     * no DOM cleanup to undo here. */
+    document.documentElement.classList.add("immersive-dive--zooming");
+    document.documentElement.classList.remove("immersive-dive--go");
+    diveBusy = true;
+
+    diveExitTimer = window.setTimeout(() => {
+      diveExitTimer = null;
+      clearImmersive();
+      diveBusy = false;
+    }, DIVE_MS);
+  }
+
   qs("btnFs").addEventListener("click", () => {
+    if (isImmersive()) {
+      if (document.fullscreenElement) {
+        const d = document;
+        if (d.exitFullscreen) void d.exitFullscreen();
+        else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
+      } else {
+        startDiveExit();
+      }
+      return;
+    }
     if (document.fullscreenElement) {
       const d = document;
       if (d.exitFullscreen) void d.exitFullscreen();
       else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
-    } else {
-      void enterFullscreenWithDive();
+      return;
     }
+    void enterFullscreenWithDive();
   });
   qs("btnBack10").addEventListener("click", () => {
     video.currentTime = Math.max(0, video.currentTime - 10);

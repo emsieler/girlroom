@@ -66,7 +66,12 @@
       <a href="contact.html">contact</a>
     </nav>
 
-    <!-- Fullscreen cinema shell: #playerWrap is reparented here during FS. -->
+    <!-- Slow dive backdrop: fades to black around the iMac during fullscreen
+         entry, so it reads as zooming INTO the screen, not popping out. -->
+    <div id="diveBackdrop" class="dive-backdrop" aria-hidden="true"></div>
+
+    <!-- Fullscreen cinema shell: #playerWrap is reparented here once the
+         dive completes, so controls / Esc exit work cleanly. -->
     <div id="cinemaHost" class="cinema-host" hidden></div>
 
     <script type="module" src="js/lander.js"></script>

@@ -13,8 +13,8 @@ body {
 .marquee {
   flex: 0 0 auto;
   overflow: hidden;
-  padding: 0.3rem 0;
-  font-size: 0.85rem;
+  padding: 0.4rem 0;
+  font-size: 0.95rem;
   white-space: nowrap;
   border-bottom: 1px solid #000;
 }
@@ -55,8 +55,8 @@ body {
 .logo-wrap {
   flex: 0 0 auto;
   /* Locked height — keeps the iMac + side galleries from shifting when this
-     header content changes. Bumped to fit a bigger logo. */
-  height: 6.2rem;
+     header content changes. */
+  height: 5.6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -532,14 +532,6 @@ html.dev-mode .vod-strip {
   object-fit: contain;
   object-position: center;
   background: #000;
-  transition:
-    transform 0.45s cubic-bezier(0.2, 0.85, 0.25, 1),
-    opacity 0.35s ease;
-}
-
-.cinema-host.is-entering #playerWrap > video {
-  transform: scale(0.94);
-  opacity: 0.88;
 }
 
 .cinema-host .imac__controls {
@@ -587,14 +579,109 @@ body:has(.cinema-host:-webkit-full-screen) .dev-toggle {
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cinema-host #playerWrap > video {
-    transition: none;
-  }
+/* ─── Cinematic dive into the iMac ──────────────────────────────────────
+ * Click "fullscreen" → the page slowly fades to black around the iMac, the
+ * iMac (with the video still parented inside it) grows outward from the
+ * center of the screen cutout, and the iMac frame fades out so only the
+ * video remains. After the dive completes, playback stays in the zoomed
+ * iMac (no reparent to cinema-host) until the user exits. */
+.dive-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  z-index: 9000;
+  pointer-events: none;
+  transition: opacity 3.2s ease;
+  will-change: opacity;
+}
 
-  .cinema-host.is-entering #playerWrap > video {
-    transform: none;
-    opacity: 1;
+html.immersive-dive--go .dive-backdrop {
+  opacity: 1;
+}
+
+/* During a dive, ancestors mustn't clip the iMac as it grows past the
+   center column. The html/body/cinema-host get overflow: clip so the
+   oversized iMac (and anything else) never spawns a scrollbar — Chrome
+   sometimes includes transformed descendants in scrollable overflow even
+   though the spec says it shouldn't, so we use clip for stronger guarantees
+   and !important so no later rule (e.g. the small-screen media query) can
+   re-enable scrolling mid-dive. */
+html.immersive-dive,
+html.immersive-dive body {
+  overflow: clip !important;
+  overflow-x: clip !important;
+  overflow-y: clip !important;
+}
+
+html.immersive-dive .grid3,
+html.immersive-dive .center {
+  overflow: visible;
+}
+
+html.immersive-dive .cinema-host {
+  overflow: hidden;
+}
+
+html.immersive-dive .imac {
+  position: relative;
+  z-index: 9100;
+  transform-origin: var(--dive-origin-x, 50%) var(--dive-origin-y, 41%);
+  transition: transform 3.5s cubic-bezier(0.16, 0.62, 0.2, 1);
+  will-change: transform;
+}
+
+html.immersive-dive--go .imac {
+  transform:
+    translate(var(--dive-tx, 0px), var(--dive-ty, 0px))
+    scale(var(--dive-scale, 1));
+}
+
+/* Reverse fade-in (no delay) for when the dive is exiting and --go is removed. */
+html.immersive-dive .imac__frame {
+  transition: opacity 1.4s ease;
+}
+
+/* Entry: bezel reads as part of the zoom for most of the travel, then
+   disappears late. Delay applies only while the html has the --go class,
+   so reversing the dive fades the frame back in immediately. */
+html.immersive-dive--go .imac__frame {
+  transition: opacity 1.4s ease 1.6s;
+  opacity: 0;
+}
+
+/* While zooming in or out: hide the control bar completely (no layout, no
+   hit-testing) so clicks reach the video for play/pause. After landing,
+   JS removes .immersive-dive--zooming so the normal hover rules apply. */
+html.immersive-dive--zooming .imac__controls {
+  visibility: hidden;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: none;
+}
+
+html.immersive-dive--zooming .imac__screen:hover .imac__controls,
+html.immersive-dive--zooming .imac__controls:focus-within {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Zoomed-in hold (landed): bar stays off until hover; don't let the invisible
+   strip eat clicks meant for the video. */
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls {
+  pointer-events: none;
+}
+
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen:hover .imac__controls,
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls:focus-within {
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dive-backdrop,
+  html.immersive-dive .imac,
+  html.immersive-dive .imac__frame {
+    transition: none !important;
   }
 }
 
