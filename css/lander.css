@@ -21,10 +21,14 @@ body {
 
 /* Track holds 2 identical chunks. Translating by -50% (one chunk's width) loops
    seamlessly. Starts at translateX(0) so the first chunk is visible flush to the
-   left edge — no leading off-screen padding. */
+   left edge — no leading off-screen padding.
+
+   `inline-block + white-space: nowrap` rather than `inline-flex + max-content`
+   because Safari's flex layout sometimes computes 0 width before first paint,
+   making `translateX(-50%)` evaluate to 0px and freezing the marquee. */
 #marqueeText {
-  display: inline-flex;
-  width: max-content;
+  display: inline-block;
+  white-space: nowrap;
   animation: marquee-scroll 40s linear infinite;
   will-change: transform;
 }

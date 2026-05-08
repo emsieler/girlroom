@@ -32,7 +32,14 @@
             >
               unmute
             </button>
-            <video id="mainVideo" playsinline autoplay muted></video>
+            <video
+              id="mainVideo"
+              playsinline
+              webkit-playsinline
+              autoplay
+              muted
+              x-webkit-airplay="allow"
+            ></video>
             <div class="imac__controls">
               <button type="button" id="btnPlayPause">play</button>
               <button type="button" id="btnBack10" data-vod-only hidden>

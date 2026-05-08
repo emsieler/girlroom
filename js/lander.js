@@ -229,6 +229,7 @@ async function main() {
   video.muted = true;
   video.autoplay = true;
   video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
   const initialStartAt = Number(resolved?.newest?.startAt) || 0;
   const initialArtist =
     resolved.mode === "live"
@@ -236,11 +237,52 @@ async function main() {
       : resolved?.newest?.artist || "";
   setMarquee(initialArtist);
   await switchSource(video, resolved.src, resolved.mode, initialStartAt);
-  try {
-    await video.play();
-  } catch {
-    // Some browsers refuse autoplay until first interaction; user can click play.
-  }
+
+  /* Robust autoplay: Safari sometimes rejects the first play() call until
+   * the source is loadedmetadata-ready, and may revoke autoplay in low-power
+   * mode. Retry on canplay/loadedmetadata and on first user gesture. */
+  const tryPlay = () => {
+    video.muted = true;
+    return video.play().catch(() => {
+      /* still blocked; will retry on next event */
+    });
+  };
+  await tryPlay();
+  let autoplayRetryHandlers = [];
+  const armAutoplayRetry = () => {
+    if (autoplayRetryHandlers.length) return;
+    const onceRetry = async () => {
+      await tryPlay();
+      if (!video.paused) cleanupAutoplayRetry();
+    };
+    autoplayRetryHandlers = [
+      ["loadedmetadata", onceRetry],
+      ["canplay", onceRetry],
+    ];
+    for (const [name, fn] of autoplayRetryHandlers) {
+      video.addEventListener(name, fn);
+    }
+    const gestureRetry = async () => {
+      await tryPlay();
+      cleanupAutoplayRetry();
+    };
+    document.addEventListener("pointerdown", gestureRetry, { once: true });
+    document.addEventListener("touchstart", gestureRetry, {
+      once: true,
+      passive: true,
+    });
+    document.addEventListener("keydown", gestureRetry, { once: true });
+    autoplayRetryHandlers.push(["pointerdown", gestureRetry, true]);
+  };
+  const cleanupAutoplayRetry = () => {
+    for (const entry of autoplayRetryHandlers) {
+      const [name, fn, isDoc] = entry;
+      if (isDoc) document.removeEventListener(name, fn);
+      else video.removeEventListener(name, fn);
+    }
+    autoplayRetryHandlers = [];
+  };
+  if (video.paused) armAutoplayRetry();
 
   const onPick = async (item) => {
     const isLive = item?.live === true;
