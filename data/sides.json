@@ -2,12 +2,13 @@
   "leftCycleMs": 4000,
   "rightCycleMs": 4500,
   "left": [
-    { "src": "assets/side-left/Screenshot%202026-05-07%20193046.png" },
-    { "src": "assets/side-left/Screenshot%202026-05-07%20193811.png" },
-    { "src": "assets/side-left/Screenshot%202026-05-07%20193947.png" }
+    { "src": "assets/side-left/left-1.png" },
+    { "src": "assets/side-left/left-2.png" },
+    { "src": "assets/side-left/left-3.png" }
   ],
   "right": [
-    { "src": "assets/side-right/Screenshot%202026-05-07%20193134.png" },
-    { "src": "assets/side-right/Screenshot%202026-05-07%20193326.png" }
+    { "src": "assets/side-right/right-1.png" },
+    { "src": "assets/side-right/right-2.png" },
+    { "src": "assets/side-right/right-3.png" }
   ]
 }
