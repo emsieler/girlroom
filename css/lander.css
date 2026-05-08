@@ -136,10 +136,10 @@ body {
  * cutout isn't exactly here.
  */
 .imac {
-  --screen-top: 3.2%;
-  --screen-left: 2.8%;
-  --screen-width: 94.4%;
-  --screen-height: 38.5%;
+  --screen-top: 4.40%;
+  --screen-left: 4.25%;
+  --screen-width: 91.38%;
+  --screen-height: 59.09%;
 
   position: relative;
   aspect-ratio: 1600 / 1342;
@@ -162,7 +162,8 @@ body {
 .imac__screen video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #000;
   display: block;
 }
 

@@ -38,7 +38,7 @@ fi
 : "${R2_PUBLIC_BASE:?set R2_PUBLIC_BASE in .dotenv (public r2.dev or custom domain — NOT cloudflarestorage.com)}"
 
 R2_ENDPOINT="${R2_ENDPOINT:-https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com}"
-MODE="${MODE:-single}"
+MODE="${MODE:-ladder}"
 INPUT="${INPUT:?set INPUT=/path/to/video.mkv}"
 TITLE="${TITLE:?set TITLE=\"Show title for archive\"}"
 
