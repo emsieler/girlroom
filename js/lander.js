@@ -128,16 +128,42 @@ async function main() {
 
   const marqueeEl = qs("marqueeText");
   const marqueeTemplate = config.marqueeText || "";
+
+  // Build a chunk node from the template. Anything wrapped in *...* becomes
+  // a <strong><em>...</em></strong> for visual emphasis inside the ASCII art.
+  // Built node-by-node (no innerHTML) so unicode in the template can't be
+  // misinterpreted as markup.
+  const buildMarqueeChunk = (text) => {
+    const chunk = document.createElement("span");
+    chunk.className = "marquee__chunk";
+    const re = /\*([^*]+)\*/g;
+    let i = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > i) {
+        chunk.appendChild(document.createTextNode(text.slice(i, m.index)));
+      }
+      const strong = document.createElement("strong");
+      const em = document.createElement("em");
+      em.textContent = m[1];
+      strong.appendChild(em);
+      chunk.appendChild(strong);
+      i = m.index + m[0].length;
+    }
+    if (i < text.length) {
+      chunk.appendChild(document.createTextNode(text.slice(i)));
+    }
+    return chunk;
+  };
+
   const setMarquee = (artist) => {
     const text = marqueeTemplate
       .replace(/\{artist\}/g, (artist || "").toString())
       .trim();
     marqueeEl.innerHTML = "";
     for (let i = 0; i < 2; i++) {
-      const chunk = document.createElement("span");
-      chunk.className = "marquee__chunk";
+      const chunk = buildMarqueeChunk(text);
       if (i === 1) chunk.setAttribute("aria-hidden", "true");
-      chunk.textContent = text;
       marqueeEl.appendChild(chunk);
     }
   };
@@ -183,7 +209,16 @@ async function main() {
   let resolved;
   if (forcedVod) {
     const src = decodeURIComponent(forcedVod);
-    resolved = { mode: "vod", src, list: archive, newest: null };
+    const matched =
+      Array.isArray(archive) &&
+      archive.find(
+        (e) =>
+          e &&
+          typeof e.hls === "string" &&
+          e.hls === src
+      );
+    // Match archive row so `startAt` / `artist` apply (e.g. archive → ?vod=…).
+    resolved = { mode: "vod", src, list: archive, newest: matched || null };
     liveBadge.hidden = true;
   } else {
     resolved = await resolvePlayback(streamCfg, archive);
@@ -227,7 +262,7 @@ async function main() {
     playPauseBtn.textContent = playing ? "pause" : "play";
     playPauseBtn.setAttribute("aria-label", playing ? "pause" : "play");
   };
-  playPauseBtn.addEventListener("click", () => {
+  const togglePlay = () => {
     if (video.paused || video.ended) {
       video.play().catch(() => {
         /* user may need a second click after autoplay block */
@@ -235,12 +270,49 @@ async function main() {
     } else {
       video.pause();
     }
-  });
+  };
+  playPauseBtn.addEventListener("click", togglePlay);
+
+  // Click anywhere on the video itself toggles play/pause. The control bar
+  // sits at z-index 3 above the video, so clicks on its buttons / scrubber
+  // hit those elements first and never reach this listener.
+  video.addEventListener("click", togglePlay);
   video.addEventListener("play", refreshPlayPause);
   video.addEventListener("pause", refreshPlayPause);
   video.addEventListener("ended", refreshPlayPause);
   video.addEventListener("playing", refreshPlayPause);
   refreshPlayPause();
+
+  // Resume on bfcache restore. When the user navigates away (e.g. to /archive)
+  // and then hits Back, the browser may restore the page from memory with the
+  // video paused at the same playhead. We re-trigger play() on `pageshow` if
+  // the page was persisted, so playback continues without a manual click.
+  window.addEventListener("pageshow", (ev) => {
+    if (!ev.persisted) return;
+    if (video.paused && !video.ended) {
+      video.play().catch(() => {
+        /* autoplay still possible after gesture; user can click play */
+      });
+    }
+    refreshPlayPause();
+  });
+
+  // Drop focus from control buttons after a mouse click so :focus-within
+  // doesn't keep the toolbar visible after the cursor leaves the player.
+  // Keyboard activation (e.detail === 0) keeps focus for accessibility.
+  const controlsEl = document.querySelector(".imac__controls");
+  if (controlsEl) {
+    controlsEl.addEventListener("click", (ev) => {
+      const t = ev.target;
+      if (
+        ev.detail > 0 &&
+        t instanceof HTMLElement &&
+        t.tagName === "BUTTON"
+      ) {
+        t.blur();
+      }
+    });
+  }
 
   const muteBtn = qs("btnMute");
   const refreshMute = () => {
@@ -254,7 +326,85 @@ async function main() {
   refreshMute();
 
   const imacRoot = document.getElementById("imacRoot");
+  const cinemaHost = /** @type {HTMLElement | null} */ (
+    document.getElementById("cinemaHost")
+  );
   let diveBusy = false;
+
+  /* ─── Cinema controls auto-hide ───────────────────────────────────────
+   * In fullscreen, the control bar fades out after 2s of mouse inactivity
+   * and reappears on the next mousemove / touch / keypress. Auto-hide is
+   * paused while the user is dragging the scrubber. */
+  const CINEMA_HIDE_DELAY_MS = 2000;
+  /** @type {number | null} */
+  let cinemaHideTimer = null;
+  let cinemaScrubbing = false;
+
+  function clearCinemaHideTimer() {
+    if (cinemaHideTimer != null) {
+      window.clearTimeout(cinemaHideTimer);
+      cinemaHideTimer = null;
+    }
+  }
+
+  function isInCinemaFullscreen() {
+    return !!cinemaHost && cinemaHost.classList.contains("is-open");
+  }
+
+  function showCinemaControls(autoHide = true) {
+    if (!cinemaHost) return;
+    cinemaHost.classList.add("show-controls");
+    clearCinemaHideTimer();
+    if (autoHide && !cinemaScrubbing) {
+      cinemaHideTimer = window.setTimeout(() => {
+        if (!cinemaHost) return;
+        cinemaHost.classList.remove("show-controls");
+        cinemaHideTimer = null;
+      }, CINEMA_HIDE_DELAY_MS);
+    }
+  }
+
+  function hideCinemaControls() {
+    if (!cinemaHost) return;
+    cinemaHost.classList.remove("show-controls");
+    clearCinemaHideTimer();
+  }
+
+  if (cinemaHost) {
+    const onActivity = () => {
+      if (!isInCinemaFullscreen()) return;
+      showCinemaControls(true);
+    };
+    cinemaHost.addEventListener("mousemove", onActivity);
+    cinemaHost.addEventListener("pointermove", onActivity);
+    cinemaHost.addEventListener("pointerdown", onActivity);
+    cinemaHost.addEventListener("touchstart", onActivity, { passive: true });
+    cinemaHost.addEventListener("keydown", onActivity);
+    cinemaHost.addEventListener("focusin", () => {
+      if (!isInCinemaFullscreen()) return;
+      showCinemaControls(false);
+    });
+    cinemaHost.addEventListener("focusout", () => {
+      if (!isInCinemaFullscreen()) return;
+      showCinemaControls(true);
+    });
+    cinemaHost.addEventListener("mouseleave", () => {
+      if (!isInCinemaFullscreen()) return;
+      if (cinemaScrubbing) return;
+      hideCinemaControls();
+    });
+  }
+
+  function restorePlayerToImac() {
+    const wrap = document.getElementById("playerWrap");
+    const frame = imacRoot?.querySelector(".imac__frame");
+    if (!wrap || !imacRoot || !frame || !cinemaHost) return;
+    if (wrap.parentElement !== cinemaHost) return;
+    imacRoot.insertBefore(wrap, frame);
+    cinemaHost.classList.remove("is-open", "is-entering", "show-controls");
+    cinemaHost.setAttribute("hidden", "");
+    clearCinemaHideTimer();
+  }
 
   function clearImmersive() {
     document.documentElement.classList.remove(
@@ -265,12 +415,14 @@ async function main() {
       imacRoot.style.removeProperty("--dive-scale");
       imacRoot.style.removeProperty("--dive-origin-x");
       imacRoot.style.removeProperty("--dive-origin-y");
+      imacRoot.style.removeProperty("--dive-tx");
+      imacRoot.style.removeProperty("--dive-ty");
     }
   }
 
   document.addEventListener("fullscreenchange", () => {
-    // Only act on EXIT here; entry is orchestrated by enterFullscreenWithDive.
     if (!document.fullscreenElement) {
+      restorePlayerToImac();
       clearImmersive();
       diveBusy = false;
     }
@@ -299,40 +451,10 @@ async function main() {
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Fast / fallback path: no imac, reduced motion, or non-supporting browser.
-    // Just enter native fullscreen on document, then on player, then on video.
-    if (!imacRoot || reduced) {
-      try {
-        await requestFs(document.documentElement);
-      } catch {
-        try {
-          await requestFs(wrap);
-        } catch {
-          const v = /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
-            video
-          );
-          if (typeof v.webkitEnterFullscreen === "function") v.webkitEnterFullscreen();
-        }
-      }
-      return;
-    }
+    const frame = imacRoot?.querySelector(".imac__frame");
 
-    diveBusy = true;
-
-    // 1) Start fading surrounding chrome BEFORE we go fullscreen, so by the
-    //    time the browser transitions to fullscreen the page UI is already
-    //    on its way out.
-    document.documentElement.classList.add("immersive-dive");
-
-    // 2) Go fullscreen on the WHOLE PAGE so the BROWSER chrome (tabs, URL
-    //    bar) disappears. Without this the dive renders under the toolbar
-    //    and looks weird.
-    try {
-      await requestFs(document.documentElement);
-    } catch {
-      // Element-level fullscreen on root not supported — fall back without
-      // the dive (iOS Safari etc.).
-      document.documentElement.classList.remove("immersive-dive");
+    // No cinema shell / frame — fall back to element fullscreen.
+    if (!cinemaHost || !imacRoot || !frame) {
       try {
         await requestFs(wrap);
       } catch {
@@ -341,32 +463,42 @@ async function main() {
         );
         if (typeof v.webkitEnterFullscreen === "function") v.webkitEnterFullscreen();
       }
-      diveBusy = false;
       return;
     }
 
-    // 3) Wait for fullscreen layout to settle, then measure rects in the
-    //    NEW (chrome-less) viewport so origin + scale are correct.
-    await new Promise((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(r))
-    );
+    diveBusy = true;
 
-    const ir = imacRoot.getBoundingClientRect();
-    const sr = wrap.getBoundingClientRect();
-    const ox = ((sr.left + sr.width / 2 - ir.left) / ir.width) * 100;
-    const oy = ((sr.top + sr.height / 2 - ir.top) / ir.height) * 100;
-    imacRoot.style.setProperty("--dive-origin-x", `${ox}%`);
-    imacRoot.style.setProperty("--dive-origin-y", `${oy}%`);
-    const scale =
-      Math.max(window.innerWidth / sr.width, window.innerHeight / sr.height) *
-      1.06;
-    imacRoot.style.setProperty("--dive-scale", String(scale));
+    cinemaHost.removeAttribute("hidden");
+    cinemaHost.classList.add("is-open");
+    if (!reduced) cinemaHost.classList.add("is-entering");
+    cinemaHost.appendChild(wrap);
 
-    // 4) Kick off the scale transition inside fullscreen.
-    await new Promise((r) =>
-      requestAnimationFrame(() => requestAnimationFrame(r))
-    );
-    document.documentElement.classList.add("immersive-dive--go");
+    try {
+      await requestFs(cinemaHost);
+    } catch {
+      imacRoot.insertBefore(wrap, frame);
+      cinemaHost.classList.remove("is-open", "is-entering");
+      cinemaHost.setAttribute("hidden", "");
+      diveBusy = false;
+      const v = /** @type {HTMLVideoElement & { webkitEnterFullscreen?: () => void }} */ (
+        video
+      );
+      if (typeof v.webkitEnterFullscreen === "function") {
+        v.webkitEnterFullscreen();
+      }
+      return;
+    }
+
+    if (!reduced) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          cinemaHost.classList.remove("is-entering");
+        });
+      });
+    }
+
+    // Reveal controls on entry, then start the auto-hide countdown.
+    showCinemaControls(true);
 
     diveBusy = false;
   }
@@ -432,20 +564,37 @@ async function main() {
     if (!isFinite(video.duration) || video.duration <= 0) return;
     scrubbing = true;
     const t = (Number(scrubber.value) / 1000) * video.duration;
+    try {
+      video.currentTime = t;
+    } catch {
+      /* ignore seek errors during rapid scrub */
+    }
     timeDisplay.textContent = `${fmtTime(t)} / ${fmtTime(video.duration)}`;
   });
   scrubber.addEventListener("change", () => {
     if (isFinite(video.duration) && video.duration > 0) {
-      video.currentTime = (Number(scrubber.value) / 1000) * video.duration;
+      const t = (Number(scrubber.value) / 1000) * video.duration;
+      try {
+        video.currentTime = t;
+      } catch {
+        /* ignore */
+      }
     }
     scrubbing = false;
   });
   scrubber.addEventListener("pointerdown", () => {
     scrubbing = true;
+    cinemaScrubbing = true;
+    if (isInCinemaFullscreen()) showCinemaControls(false);
   });
-  scrubber.addEventListener("pointerup", () => {
+  const endScrub = () => {
     scrubbing = false;
-  });
+    cinemaScrubbing = false;
+    if (isInCinemaFullscreen()) showCinemaControls(true);
+  };
+  scrubber.addEventListener("pointerup", endScrub);
+  scrubber.addEventListener("pointercancel", endScrub);
+  window.addEventListener("pointerup", endScrub);
 
   const leftRoot = qs("sideLeft");
   const rightRoot = qs("sideRight");

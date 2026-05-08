@@ -36,6 +36,13 @@ body {
   padding-right: 4rem;
 }
 
+.marquee__chunk strong,
+.marquee__chunk strong em {
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
 @keyframes marquee-scroll {
   from {
     transform: translateX(0);
@@ -184,10 +191,13 @@ body {
  * cutout isn't exactly here.
  */
 .imac {
-  --screen-top: 4.40%;
-  --screen-left: 4.25%;
-  --screen-width: 91.38%;
-  --screen-height: 59.09%;
+  /* Slightly oversized vs. the PNG cutout so the screen's black absorbs any
+     AA-pixel halos around the cutout edge (avoids a white hairline) without
+     painting black around the rest of the iMac silhouette. */
+  --screen-top: 4.10%;
+  --screen-left: 3.95%;
+  --screen-width: 91.98%;
+  --screen-height: 59.69%;
 
   position: relative;
   aspect-ratio: 1600 / 1342;
@@ -207,6 +217,10 @@ body {
   overflow: hidden;
   outline: none;
   border: 0;
+  isolation: isolate;
+  /* Outset the screen's black 1px outward so AA fringing along the iMac PNG's
+     cutout edge stays black on black instead of revealing the page behind. */
+  box-shadow: 0 0 0 1px #000;
 }
 
 .imac__screen:focus,
@@ -215,13 +229,24 @@ body {
 }
 
 .imac__screen video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: #000;
-  display: block;
-  outline: none;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
   border: 0;
+  outline: none;
+  box-shadow: none;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 
 .imac__screen video:focus,
@@ -428,12 +453,6 @@ html.dev-mode .vod-strip {
   cursor: pointer;
 }
 
-html.immersive-dive .dev-toggle {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
 .vod-strip button {
   font-size: 0.7rem;
   max-width: 140px;
@@ -456,6 +475,129 @@ html.immersive-dive .dev-toggle {
   border: none;
 }
 
+/* ─── Cinema fullscreen (letterboxed video, preserved AR) ─────────────── */
+.cinema-host {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  box-sizing: border-box;
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  padding: 0;
+}
+
+.cinema-host.is-open {
+  display: flex;
+}
+
+.cinema-host:fullscreen,
+.cinema-host:-webkit-full-screen {
+  display: flex;
+}
+
+/* #playerWrap lives here during fullscreen — not the iMac cutout layout. */
+.cinema-host #playerWrap {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-height: 0;
+  display: grid !important;
+  grid-template-rows: 1fr auto;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  justify-items: stretch;
+  background: #000;
+}
+
+.cinema-host #playerWrap > video {
+  grid-row: 1;
+  grid-column: 1;
+  align-self: center;
+  justify-self: center;
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 100% !important;
+  min-height: 0;
+  margin: 0 auto;
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.85, 0.25, 1),
+    opacity 0.35s ease;
+}
+
+.cinema-host.is-entering #playerWrap > video {
+  transform: scale(0.94);
+  opacity: 0.88;
+}
+
+.cinema-host .imac__controls {
+  grid-row: 2;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  flex: unset;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+/* Cinema mode hides UI by default and reveals on mouse move (JS toggles
+ * .show-controls). The :focus-within fallback keeps controls visible while
+ * the user is interacting via keyboard or has started a scrubber drag. */
+.cinema-host.show-controls .imac__controls,
+.cinema-host .imac__controls:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hide the cursor while the cinema chrome is hidden, so the screen is clean. */
+.cinema-host {
+  cursor: none;
+}
+
+.cinema-host.show-controls {
+  cursor: default;
+}
+
+.cinema-host .imac__badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+}
+
+body:has(.cinema-host:fullscreen) .dev-toggle,
+body:has(.cinema-host:-webkit-full-screen) .dev-toggle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinema-host #playerWrap > video {
+    transition: none;
+  }
+
+  .cinema-host.is-entering #playerWrap > video {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 .bottom-nav a {
   text-decoration: none;
 }
@@ -465,73 +607,7 @@ html.immersive-dive .dev-toggle {
   color: var(--accent);
 }
 
-/* Fullscreen “dive into the monitor” — 2D perspective + scale, no WebGL.
- * The dive is performed AFTER entering OS fullscreen on <html>, so the
- * browser chrome (tabs, URL bar) is gone before the animation starts. */
-html.immersive-dive,
-html.immersive-dive body {
-  overflow: hidden;
-  background: #000;
-}
-
-/* When <html> is the fullscreen element, give it a solid black background so
- * anything outside the scaled iMac doesn't flash white. */
-html:fullscreen {
-  background: #000;
-}
-
-html.immersive-dive .marquee,
-html.immersive-dive .logo-wrap,
-html.immersive-dive .side,
-html.immersive-dive .vod-strip,
-html.immersive-dive .bottom-nav {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
-}
-
-html.immersive-dive .grid3 {
-  overflow: visible;
-}
-
-html.immersive-dive .center {
-  position: relative;
-  z-index: 40;
-  justify-content: center;
-}
-
-html.immersive-dive .imac {
-  transform-origin: var(--dive-origin-x, 50%) var(--dive-origin-y, 34%);
-  transition:
-    transform 0.75s cubic-bezier(0.2, 0.85, 0.25, 1),
-    filter 0.75s ease;
-  will-change: transform;
-}
-
-html.immersive-dive--go .imac {
-  transform: perspective(900px) translateZ(120px) scale(var(--dive-scale, 14));
-  filter: brightness(1.05);
-}
-
-html.immersive-dive--go .imac__frame {
-  opacity: 0;
-  transition: opacity 0.22s ease 0.48s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.immersive-dive .imac,
-  html.immersive-dive--go .imac__frame {
-    transition: none;
-  }
-
-  html.immersive-dive .marquee,
-  html.immersive-dive .logo-wrap,
-  html.immersive-dive .side,
-  html.immersive-dive .vod-strip,
-  html.immersive-dive .bottom-nav {
-    transition: none;
-  }
-}
+/* (Removed old html fullscreen + iMac scale “dive” — replaced by cinema-host.) */
 
 @media (max-width: 720px) {
   body {

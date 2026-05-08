@@ -2,9 +2,9 @@
   {
     "id": "2026-05-08-2026-05-06-stream",
     "title": "2026-05-06 stream",
-    "artist": "DJ ATTENTION b2b DJ Fuck",
+    "artist": "DJ ATTENTION",
     "date": "2026-05-08",
-    "poster": "",
+    "poster": "assets/poster/2026-05-08-2026-05-06-stream.jpg",
     "hls": "https://pub-070a9d21880847df832fdee775287b73.r2.dev/2026-05-08-2026-05-06-stream/index.m3u8",
     "startAt": 173
   },
