@@ -284,7 +284,7 @@ body {
   min-width: 0;
 }
 
-.imac__screen:hover .imac__controls,
+.imac__screen.show-chrome .imac__controls,
 .imac__controls:focus-within {
   opacity: 1;
 }
@@ -472,7 +472,7 @@ body {
   pointer-events: none;
 }
 
-.imac__screen:hover .imac__mute-corner:not(.is-muted),
+.imac__screen.show-chrome .imac__mute-corner:not(.is-muted),
 .imac__mute-corner:not(.is-muted):focus-visible {
   opacity: 1;
   pointer-events: auto;
@@ -669,7 +669,10 @@ body:has(.cinema-host:-webkit-full-screen) .dev-toggle {
   opacity: 0;
   z-index: 9000;
   pointer-events: none;
-  transition: opacity 3.2s ease;
+  /* Linear so the page darkens at a steady rate (no easing slowdown at the
+     ends). Shorter than the iMac transform so the background reaches full
+     black ~1s before the zoom finishes — keeps the iMac "bright" longer. */
+  transition: opacity 2.2s linear;
   will-change: opacity;
 }
 
@@ -738,9 +741,9 @@ html.immersive-dive--zooming .imac__mute-corner {
   transition: none;
 }
 
-html.immersive-dive--zooming .imac__screen:hover .imac__controls,
+html.immersive-dive--zooming .imac__screen.show-chrome .imac__controls,
 html.immersive-dive--zooming .imac__controls:focus-within,
-html.immersive-dive--zooming .imac__screen:hover .imac__mute-corner,
+html.immersive-dive--zooming .imac__screen.show-chrome .imac__mute-corner,
 html.immersive-dive--zooming .imac__mute-corner:focus-visible {
   visibility: hidden !important;
   opacity: 0 !important;
@@ -755,9 +758,9 @@ html.immersive-dive--go:not(.immersive-dive--zooming) .imac__mute-corner:not(.is
   transition: opacity 0.2s ease;
 }
 
-html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen:hover .imac__controls,
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen.show-chrome .imac__controls,
 html.immersive-dive--go:not(.immersive-dive--zooming) .imac__controls:focus-within,
-html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen:hover .imac__mute-corner:not(.is-muted),
+html.immersive-dive--go:not(.immersive-dive--zooming) .imac__screen.show-chrome .imac__mute-corner:not(.is-muted),
 html.immersive-dive--go:not(.immersive-dive--zooming) .imac__mute-corner:not(.is-muted):focus-visible {
   opacity: 1;
   pointer-events: auto;

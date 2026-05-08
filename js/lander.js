@@ -200,6 +200,7 @@ async function main() {
   setLineEl("tagline", config.tagline);
 
   const video = /** @type {HTMLVideoElement} */ (qs("mainVideo"));
+  const playerWrap = /** @type {HTMLElement} */ (qs("playerWrap"));
   const liveBadge = qs("liveBadge");
 
   const params = new URLSearchParams(window.location.search);
@@ -315,6 +316,81 @@ async function main() {
   }
 
   const muteBtn = qs("btnMute");
+
+  /* iMac chrome (bottom bar + white "mute" corner): shown on pointer activity,
+   * auto-hides after idle like cinema mode — :hover alone kept overlays stuck
+   * on when the cursor rested on the video. Pink "unmute" is CSS-only, always on. */
+  const IMAC_CHROME_HIDE_MS = 1000;
+  /** @type {number | null} */
+  let imacChromeTimer = null;
+  let imacChromeScrubbing = false;
+
+  function clearImacChromeTimer() {
+    if (imacChromeTimer != null) {
+      window.clearTimeout(imacChromeTimer);
+      imacChromeTimer = null;
+    }
+  }
+
+  function hidePlayerChrome() {
+    playerWrap.classList.remove("show-chrome");
+    clearImacChromeTimer();
+  }
+
+  function showPlayerChrome(autoHide = true) {
+    playerWrap.classList.add("show-chrome");
+    clearImacChromeTimer();
+    if (!autoHide || imacChromeScrubbing) return;
+    imacChromeTimer = window.setTimeout(() => {
+      imacChromeTimer = null;
+      if (imacChromeScrubbing) return;
+      const ae = document.activeElement;
+      if (
+        ae instanceof Node &&
+        (controlsEl?.contains(ae) || ae === muteBtn)
+      ) {
+        return;
+      }
+      playerWrap.classList.remove("show-chrome");
+    }, IMAC_CHROME_HIDE_MS);
+  }
+
+  const onPlayerChromeActivity = () => showPlayerChrome(true);
+  playerWrap.addEventListener("mouseenter", onPlayerChromeActivity);
+  playerWrap.addEventListener("mousemove", onPlayerChromeActivity);
+  playerWrap.addEventListener("pointerdown", onPlayerChromeActivity);
+  playerWrap.addEventListener("touchstart", onPlayerChromeActivity, {
+    passive: true,
+  });
+  playerWrap.addEventListener("wheel", onPlayerChromeActivity, { passive: true });
+  playerWrap.addEventListener("keydown", onPlayerChromeActivity);
+  playerWrap.addEventListener("mouseleave", () => hidePlayerChrome());
+  playerWrap.addEventListener("focusin", (ev) => {
+    const t = ev.target;
+    if (!(t instanceof HTMLElement)) return;
+    if (
+      controlsEl?.contains(t) ||
+      t === muteBtn ||
+      t.id === "scrubber"
+    ) {
+      showPlayerChrome(false);
+    }
+  });
+  playerWrap.addEventListener("focusout", () => {
+    requestAnimationFrame(() => {
+      const ae = document.activeElement;
+      const stillInChrome =
+        ae instanceof HTMLElement &&
+        (controlsEl?.contains(ae) ||
+          ae === muteBtn ||
+          ae.id === "scrubber");
+      /* Do not call showPlayerChrome(true) here — e.g. after unmute we blur
+       * the mute button; focus moves to <body> and reopening chrome made the
+       * overlays stick. User can show chrome again with pointer activity. */
+      if (!stillInChrome) hidePlayerChrome();
+    });
+  });
+
   const refreshMute = () => {
     const muted = video.muted;
     muteBtn.textContent = muted ? "unmute" : "mute";
@@ -322,9 +398,18 @@ async function main() {
     muteBtn.setAttribute("aria-label", muted ? "unmute" : "mute");
   };
   muteBtn.addEventListener("click", (ev) => {
+    const wasMuted = video.muted;
     video.muted = !video.muted;
     refreshMute();
-    if (ev.detail > 0) muteBtn.blur();
+    if (wasMuted && !video.muted) {
+      muteBtn.blur();
+      // Small offset so the click doesn't snap-hide before the user sees
+      // the state flip; long enough to feel deliberate, short enough to
+      // not linger.
+      window.setTimeout(hidePlayerChrome, 100);
+    } else if (ev.detail > 0) {
+      muteBtn.blur();
+    }
   });
   video.addEventListener("volumechange", refreshMute);
   refreshMute();
@@ -719,13 +804,17 @@ async function main() {
   });
   scrubber.addEventListener("pointerdown", () => {
     scrubbing = true;
+    imacChromeScrubbing = true;
     cinemaScrubbing = true;
     if (isInCinemaFullscreen()) showCinemaControls(false);
+    showPlayerChrome(false);
   });
   const endScrub = () => {
     scrubbing = false;
+    imacChromeScrubbing = false;
     cinemaScrubbing = false;
     if (isInCinemaFullscreen()) showCinemaControls(true);
+    showPlayerChrome(true);
   };
   scrubber.addEventListener("pointerup", endScrub);
   scrubber.addEventListener("pointercancel", endScrub);
